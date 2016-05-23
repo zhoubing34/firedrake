@@ -42,8 +42,10 @@ class Vector(object):
             self.dat *= a
 
     def __mul__(self, other):
-        """Scalar multiplication by other."""
-        return self.copy()._scale(other)
+        """Scalar multiplication by other. This modifies self in place. No
+        really. We realise this is a horrible abuse of notation but DOLFIN
+        made us do it!"""
+        return self._scale(other)
 
     def __rmul__(self, other):
         """Reverse scalar multiplication by other."""
