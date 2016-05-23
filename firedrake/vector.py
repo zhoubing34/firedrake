@@ -42,8 +42,12 @@ class Vector(object):
             self.dat *= a
 
     def __mul__(self, other):
-        """Scale self by other"""
-        return self._scale(other)
+        """Scalar multiplication by other."""
+        return self.copy()._scale(other)
+
+    def __rmul__(self, other):
+        """Reverse scalar multiplication by other."""
+        return self.__mul__(other)
 
     def __add__(self, other):
         """Add other to self"""
@@ -61,6 +65,10 @@ class Vector(object):
         """Return a copy of the process local data as a numpy array"""
         with self.dat.vec_ro as v:
             return np.copy(v.array)
+
+    def copy(self):
+        """Return a copy of this vector."""
+        return Vector(self.dat.duplicate())
 
     def get_local(self):
         """Return a copy of the process local data as a numpy array"""
@@ -83,6 +91,11 @@ class Vector(object):
 
         with self.dat.vec_ro as v:
             return v.getOwnershipRange()
+
+    def max(self):
+        """Return the maximum entry in the vector."""
+        with self.dat.vec_ro as v:
+            return v.max()[1]
 
     def size(self):
         """Return the global size of the data"""
