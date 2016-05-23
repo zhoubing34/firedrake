@@ -40,11 +40,14 @@ class Vector(object):
             self.dat *= a.dat
         except AttributeError:
             self.dat *= a
+        return self
 
     def __mul__(self, other):
-        """Scalar multiplication by other. This modifies self in place. No
-        really. We realise this is a horrible abuse of notation but DOLFIN
-        made us do it!"""
+        """Scalar multiplication by other."""
+        return self.copy()._scale(other)
+
+    def __imul__(self, other):
+        """In place scalar multiplication by other."""
         return self._scale(other)
 
     def __rmul__(self, other):
@@ -53,10 +56,20 @@ class Vector(object):
 
     def __add__(self, other):
         """Add other to self"""
+        sum = self.copy()
+        try:
+            sum.dat += other.dat
+        except AttributeError:
+            sum += other
+        return sum
+
+    def __iadd__(self, other):
+        """Add other to self"""
         try:
             self.dat += other.dat
         except AttributeError:
-            self.dat += other
+            self += other
+        return self
 
     def apply(self, action):
         """Finalise vector assembly. This is not actually required in
@@ -70,7 +83,7 @@ class Vector(object):
 
     def copy(self):
         """Return a copy of this vector."""
-        return Vector(self.dat.duplicate())
+        return Vector(op2.Dat(self.dat))
 
     def get_local(self):
         """Return a copy of the process local data as a numpy array"""
