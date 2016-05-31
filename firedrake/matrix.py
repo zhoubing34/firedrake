@@ -162,6 +162,24 @@ class Matrix(object):
                              for bc in self.bcs))
         return old_subdomains != new_subdomains
 
+    @property
+    def row_space(self):
+        """The :class:`.FunctionSpace` to which the matrix action maps."""
+        return self.a.arguments()[0].function_space()
+
+    @property
+    def column_space(self):
+        """The :class:`.FunctionSpace` from which the matrix action maps."""
+        return self.a.arguments()[1].function_space()
+
+    def __mul__(self, other):
+        from .function import Function
+        result = Function(self.row_space)
+        with other.dat.vec as x:
+            with result.dat.vec as y:
+                self.M.handle.mult(x, y)
+        return result
+
     def add_bc(self, bc):
         """Add a boundary condition to this :class:`Matrix`.
 
