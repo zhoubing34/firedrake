@@ -8,9 +8,7 @@ import firedrake.utils
 from . import utils
 
 
-__all__ = ["prolong", "restrict", "inject", "FunctionHierarchy",
-           "FunctionSpaceHierarchy", "VectorFunctionSpaceHierarchy",
-           "TensorFunctionSpaceHierarchy", "MixedFunctionSpaceHierarchy"]
+__all__ = ["prolong", "restrict", "inject"]
 
 
 def check_arguments(coarse, fine):
@@ -27,7 +25,7 @@ def check_arguments(coarse, fine):
 
 
 @firedrake.utils.known_pyop2_safe
-def transfer(input, output, typ=None):
+def transfer(input, output, *, typ=None):
     if len(input.function_space()) > 1:
         if len(output.function_space()) != len(input.function_space()):
             raise ValueError("Mixed spaces have different lengths")
@@ -100,52 +98,3 @@ prolong = partial(transfer, typ="prolong")
 restrict = partial(transfer, typ="restrict")
 
 inject = partial(transfer, typ="inject")
-
-
-def FunctionHierarchy(fs_hierarchy, functions=None):
-    """ outdated and returns warning & list of functions corresponding to each level
-    of a functionspace hierarchy
-
-        :arg fs_hierarchy: the :class:`~.FunctionSpaceHierarchy` to build on.
-        :arg functions: optional :class:`~.Function` for each level.
-
-    """
-    from firedrake.logging import warning, RED
-    warning(RED % "FunctionHierarchy is obsolete. Falls back by returning list of functions")
-
-    if functions is not None:
-        assert len(functions) == len(fs_hierarchy)
-        for f, V in zip(functions, fs_hierarchy):
-            assert f.function_space() == V
-        return tuple(functions)
-    else:
-        return tuple([firedrake.Function(f) for f in fs_hierarchy])
-
-
-def FunctionSpaceHierarchy(mesh_hierarchy, *args, **kwargs):
-    from firedrake.logging import warning, RED
-    warning(RED % "FunctionSpaceHierarchy is obsolete. Just build a FunctionSpace on the relevant mesh")
-
-    return tuple(firedrake.FunctionSpace(mesh, *args, **kwargs) for mesh in mesh_hierarchy)
-
-
-def VectorFunctionSpaceHierarchy(mesh_hierarchy, *args, **kwargs):
-    from firedrake.logging import warning, RED
-    warning(RED % "VectorFunctionSpaceHierarchy is obsolete. Just build a FunctionSpace on the relevant mesh")
-
-    return tuple(firedrake.VectorFunctionSpace(mesh, *args, **kwargs) for mesh in mesh_hierarchy)
-
-
-def TensorFunctionSpaceHierarchy(mesh_hierarchy, *args, **kwargs):
-    from firedrake.logging import warning, RED
-    warning(RED % "TensorFunctionSpaceHierarchy is obsolete. Just build a FunctionSpace on the relevant mesh")
-
-    return tuple(firedrake.TensorFunctionSpace(mesh, *args, **kwargs) for mesh in mesh_hierarchy)
-
-
-def MixedFunctionSpaceHierarchy(mesh_hierarchy, *args, **kwargs):
-    from firedrake.logging import warning, RED
-    warning(RED % "TensorFunctionSpaceHierarchy is obsolete. Just build a FunctionSpace on the relevant mesh")
-
-    kwargs.pop("mesh", None)
-    return tuple(firedrake.MixedFunctionSpace(*args, mesh=mesh, **kwargs) for mesh in mesh_hierarchy)
