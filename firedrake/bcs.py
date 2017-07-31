@@ -43,7 +43,7 @@ class DirichletBC(object):
         strong boundary conditions on DG spaces, or no-slip conditions on HDiv spaces.
     '''
 
-    def __init__(self, V, g, sub_domain, method="topological"):
+    def __init__(self, V, g, sub_domain, *, method="topological"):
         self._function_space = V
         # Save the original value the user passed in.  If the user
         # passed in an Expression that has user-defined variables in

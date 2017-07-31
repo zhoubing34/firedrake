@@ -9,7 +9,7 @@ cwd = abspath(dirname(__file__))
 
 @pytest.fixture
 def mesh_interval():
-    return IntervalMesh(1, -0.2, 1.4)
+    return IntervalMesh(1, -0.2, right=1.4)
 
 
 @pytest.fixture

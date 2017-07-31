@@ -16,7 +16,7 @@ from firedrake import utils
 __all__ = ("interpolate", "Interpolator")
 
 
-def interpolate(expr, V, subset=None):
+def interpolate(expr, V, *, subset=None):
     """Interpolate an expression onto a new function in V.
 
     :arg expr: an :class:`.Expression`.
@@ -53,7 +53,7 @@ class Interpolator(object):
        arguments (such that they won't be collected until the
        :class:`Interpolator` is also collected).
     """
-    def __init__(self, expr, V, subset=None):
+    def __init__(self, expr, V, *, subset=None):
         self.callable = make_interpolator(expr, V, subset)
 
     @utils.known_pyop2_safe

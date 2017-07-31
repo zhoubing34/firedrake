@@ -73,7 +73,7 @@ class ImplicitMatrixContext(object):
        preconditioners and the like.
 
     """
-    def __init__(self, a, row_bcs=[], col_bcs=[],
+    def __init__(self, a, *, row_bcs=[], col_bcs=[],
                  fc_params=None, appctx=None):
         self.a = a
         self.aT = adjoint(a)

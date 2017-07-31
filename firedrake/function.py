@@ -37,7 +37,7 @@ class _CFunction(ctypes.Structure):
 class CoordinatelessFunction(ufl.Coefficient):
     """A function on a mesh topology."""
 
-    def __init__(self, function_space, val=None, name=None, dtype=ScalarType):
+    def __init__(self, function_space, *, val=None, name=None, dtype=ScalarType):
         """
         :param function_space: the :class:`.FunctionSpace`, or
             :class:`.MixedFunctionSpace` on which to build this
@@ -73,14 +73,15 @@ class CoordinatelessFunction(ufl.Coefficient):
             assert val.comm == self.comm
             self.dat = val
         else:
-            self.dat = function_space.make_dat(val, dtype, self.name(), uid=self.uid)
+            self.dat = function_space.make_dat(val=val, valuetype=dtype,
+                                               name=self.name(), uid=self.uid)
 
     @property
     def topological(self):
         """The underlying coordinateless function."""
         return self
 
-    def copy(self, deepcopy=False):
+    def copy(self, *, deepcopy=False):
         """Return a copy of this CoordinatelessFunction.
 
         :kwarg deepcopy: If ``True``, the new
@@ -103,7 +104,7 @@ class CoordinatelessFunction(ufl.Coefficient):
         """Extract any sub :class:`Function`\s defined on the component spaces
         of this this :class:`Function`'s :class:`.FunctionSpace`."""
         if self._split is None:
-            self._split = tuple(CoordinatelessFunction(fs, dat, name="%s[%d]" % (self.name(), i))
+            self._split = tuple(CoordinatelessFunction(fs, val=dat, name="%s[%d]" % (self.name(), i))
                                 for i, (fs, dat) in
                                 enumerate(zip(self.function_space(), self.dat)))
         return self._split
@@ -176,7 +177,7 @@ class CoordinatelessFunction(ufl.Coefficient):
         """Return the label (a description) of this :class:`Function`"""
         return self._label
 
-    def rename(self, name=None, label=None):
+    def rename(self, *, name=None, label=None):
         """Set the name and or label of this :class:`Function`
 
         :arg name: The new name of the `Function` (if not `None`)
@@ -212,7 +213,7 @@ class Function(ufl.Coefficient):
     the :class:`.FunctionSpace`.
     """
 
-    def __init__(self, function_space, val=None, name=None, dtype=ScalarType):
+    def __init__(self, function_space, *, val=None, name=None, dtype=ScalarType):
         """
         :param function_space: the :class:`.FunctionSpace`,
             or :class:`.MixedFunctionSpace` on which to build this :class:`Function`.
@@ -282,7 +283,7 @@ class Function(ufl.Coefficient):
         """Extract any sub :class:`Function`\s defined on the component spaces
         of this this :class:`Function`'s :class:`.FunctionSpace`."""
         if self._split is None:
-            self._split = tuple(Function(fs, dat, name="%s[%d]" % (self.name(), i))
+            self._split = tuple(Function(fs, val=dat, name="%s[%d]" % (self.name(), i))
                                 for i, (fs, dat) in
                                 enumerate(zip(self.function_space(), self.dat)))
         return self._split
@@ -325,7 +326,7 @@ class Function(ufl.Coefficient):
         """Return a :class:`.Vector` wrapping the data in this :class:`Function`"""
         return vector.Vector(self)
 
-    def interpolate(self, expression, subset=None):
+    def interpolate(self, expression, *, subset=None):
         """Interpolate an expression onto this :class:`Function`.
 
         :param expression: :class:`.Expression` or a UFL expression to interpolate
@@ -334,7 +335,7 @@ class Function(ufl.Coefficient):
         return interpolation.interpolate(expression, self, subset=subset)
 
     @utils.known_pyop2_safe
-    def assign(self, expr, subset=None):
+    def assign(self, expr, *, subset=None):
         """Set the :class:`Function` value to the pointwise value of
         expr. expr may only contain :class:`Function`\s on the same
         :class:`.FunctionSpace` as the :class:`Function` being assigned to.
@@ -359,7 +360,7 @@ class Function(ufl.Coefficient):
 
         from firedrake import assemble_expressions
         assemble_expressions.evaluate_expression(
-            assemble_expressions.Assign(self, expr), subset)
+            assemble_expressions.Assign(self, expr), subset=subset)
         return self
 
     @utils.known_pyop2_safe
@@ -479,7 +480,7 @@ class Function(ufl.Coefficient):
             raise NotImplementedError("Unsupported arguments when attempting to evaluate Function.")
         return self.at(coord)
 
-    def at(self, arg, *args, **kwargs):
+    def at(self, arg, *args, dont_raise=False, tolerance=None):
         """Evaluate function at points.
 
         :arg arg: The point to locate.
@@ -495,9 +496,6 @@ class Function(ufl.Coefficient):
             arg = (arg,) + args
         arg = np.array(arg, dtype=float)
 
-        dont_raise = kwargs.get('dont_raise', False)
-
-        tolerance = kwargs.get('tolerance', None)
         # Handle f.at(0.3)
         if not arg.shape:
             arg = arg.reshape(-1)
@@ -598,7 +596,7 @@ class PointNotInDomainError(Exception):
         return "domain %s does not contain point %s" % (self.domain, self.point)
 
 
-def make_c_evaluate(function, c_name="evaluate", ldargs=None, tolerance=None):
+def make_c_evaluate(function, *, c_name="evaluate", ldargs=None, tolerance=None):
     """Generates, compiles and loads a C function to evaluate the
     given Firedrake :class:`Function`."""
 

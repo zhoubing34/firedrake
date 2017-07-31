@@ -138,7 +138,7 @@ def _solve_varproblem(*args, **kwargs):
     if isinstance(eq.lhs, ufl.Form) and isinstance(eq.rhs, ufl.Form):
 
         # Create problem
-        problem = vs.LinearVariationalProblem(eq.lhs, eq.rhs, u, bcs, Jp,
+        problem = vs.LinearVariationalProblem(eq.lhs, eq.rhs, u, bcs=bcs, aP=Jp,
                                               form_compiler_parameters=form_compiler_parameters)
 
         # Create solver and call solve
@@ -156,7 +156,7 @@ def _solve_varproblem(*args, **kwargs):
         if eq.rhs != 0:
             raise TypeError("Only '0' support on RHS of nonlinear Equation, not %r" % eq.rhs)
         # Create problem
-        problem = vs.NonlinearVariationalProblem(eq.lhs, u, bcs, J, Jp,
+        problem = vs.NonlinearVariationalProblem(eq.lhs, u, bcs=bcs, J=J, Jp=Jp,
                                                  form_compiler_parameters=form_compiler_parameters)
 
         # Create solver and call solve

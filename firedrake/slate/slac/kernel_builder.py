@@ -24,7 +24,7 @@ class KernelBuilder(object):
     Instructions for assembling the full kernel AST of a Slate expression is
     provided by the method `construct_ast`.
     """
-    def __init__(self, expression, tsfc_parameters=None):
+    def __init__(self, expression, *, tsfc_parameters=None):
         """Constructor for the KernelBuilder class.
 
         :arg expression: a :class:`TensorBase` object.

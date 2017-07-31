@@ -44,7 +44,7 @@ def coarse_to_fine_node_map(coarse, fine):
                                              map_vals, offset=offset))
 
 
-def get_transfer_kernel(coarse, fine, typ=None):
+def get_transfer_kernel(coarse, fine, *, typ=None):
     ch, level = get_level(coarse.mesh())
     mesh = ch[0]
     assert hasattr(mesh, "_shared_data_cache")
@@ -69,12 +69,12 @@ def get_transfer_kernel(coarse, fine, typ=None):
                                         vperm[0, :],
                                         offset=None)
         if typ == "prolong":
-            kernel = get_prolongation_kernel(element, indices, dim)
+            kernel = get_prolongation_kernel(element, indices, dim=dim)
         elif typ == "inject":
-            kernel = get_injection_kernel(element, indices, dim)
+            kernel = get_injection_kernel(element, indices, dim=dim)
         elif typ == "restrict":
             discontinuous = element.entity_dofs() == element.entity_closure_dofs()
-            kernel = get_restriction_kernel(element, indices, dim, no_weights=discontinuous)
+            kernel = get_restriction_kernel(element, indices, dim=dim, no_weights=discontinuous)
         else:
             raise ValueError("Unknown transfer type '%s'" % typ)
         return cache.setdefault(key, kernel)
@@ -203,7 +203,7 @@ def get_node_permutations(fiat_element):
     return result
 
 
-def get_unique_indices(fiat_element, nonunique_map, vperm, offset=None):
+def get_unique_indices(fiat_element, nonunique_map, vperm, *, offset=None):
     """Given a non-unique map permute to a consistent order and return
     an array of unique indices, if offset is supplied and not None,
     also return the extruded "offset" array for the new map."""
@@ -332,7 +332,7 @@ def format_array_literal(arr):
     return "{{"+"},\n{".join([",".join(map(lambda x: "%g" % x, x)) for x in arr])+"}}"
 
 
-def get_injection_kernel(fiat_element, unique_indices, dim=1):
+def get_injection_kernel(fiat_element, unique_indices, *, dim=1):
     weights = injection_weights(fiat_element)[unique_indices].T
     ncdof = weights.shape[0]
     nfdof = weights.shape[1]
@@ -384,7 +384,7 @@ def get_injection_kernel(fiat_element, unique_indices, dim=1):
     return op2.Kernel(k, "injection", opts=parameters["coffee"])
 
 
-def get_prolongation_kernel(fiat_element, unique_indices, dim=1):
+def get_prolongation_kernel(fiat_element, unique_indices, *, dim=1):
     weights = restriction_weights(fiat_element)[unique_indices]
     nfdof = weights.shape[0]
     ncdof = weights.shape[1]
@@ -432,7 +432,7 @@ def get_prolongation_kernel(fiat_element, unique_indices, dim=1):
     return op2.Kernel(k, "prolongation", opts=parameters["coffee"])
 
 
-def get_restriction_kernel(fiat_element, unique_indices, dim=1, no_weights=False):
+def get_restriction_kernel(fiat_element, unique_indices, *, dim=1, no_weights=False):
     weights = restriction_weights(fiat_element)[unique_indices].T
     ncdof = weights.shape[0]
     nfdof = weights.shape[1]

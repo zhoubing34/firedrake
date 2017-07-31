@@ -53,7 +53,7 @@ supported_integral_types = [
 ]
 
 
-def compile_expression(slate_expr, tsfc_parameters=None):
+def compile_expression(slate_expr, *, tsfc_parameters=None):
     """Takes a Slate expression `slate_expr` and returns the appropriate
     :class:`firedrake.op2.Kernel` object representing the Slate expression.
 
@@ -592,7 +592,7 @@ def parenthesize(arg, prec=None, parent=None):
     return "(%s)" % arg
 
 
-def metaphrase_slate_to_cpp(expr, temps, prec=None):
+def metaphrase_slate_to_cpp(expr, temps, *, prec=None):
     """Translates a Slate expression into its equivalent representation in
     the Eigen C++ syntax.
 
@@ -624,7 +624,7 @@ def metaphrase_slate_to_cpp(expr, temps, prec=None):
 
     elif isinstance(expr, Negative):
         tensor, = expr.operands
-        result = "-%s" % metaphrase_slate_to_cpp(tensor, temps, expr.prec)
+        result = "-%s" % metaphrase_slate_to_cpp(tensor, temps, prec=expr.prec)
         return parenthesize(result, expr.prec, prec)
 
     elif isinstance(expr, (Add, Sub, Mul)):
@@ -632,9 +632,9 @@ def metaphrase_slate_to_cpp(expr, temps, prec=None):
               Sub: '-',
               Mul: '*'}[type(expr)]
         A, B = expr.operands
-        result = "%s %s %s" % (metaphrase_slate_to_cpp(A, temps, expr.prec),
+        result = "%s %s %s" % (metaphrase_slate_to_cpp(A, temps, prec=expr.prec),
                                op,
-                               metaphrase_slate_to_cpp(B, temps, expr.prec))
+                               metaphrase_slate_to_cpp(B, temps, prec=expr.prec))
 
         return parenthesize(result, expr.prec, prec)
 
@@ -643,7 +643,7 @@ def metaphrase_slate_to_cpp(expr, temps, prec=None):
         c, = expr.actee
         result = "(%s) * %s" % (metaphrase_slate_to_cpp(tensor,
                                                         temps,
-                                                        expr.prec), temps[c])
+                                                        prec=expr.prec), temps[c])
         return parenthesize(result, expr.prec, prec)
 
     else:

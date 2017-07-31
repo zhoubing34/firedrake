@@ -239,7 +239,7 @@ def refine(dm, comm):
     return fdm
 
 
-def attach_hooks(dm, level=None, sf=None, section=None):
+def attach_hooks(dm, *, level=None, sf=None, section=None):
     """Attach callback hooks to a DM.
 
     :arg DM: The DM to attach callbacks to.

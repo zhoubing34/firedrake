@@ -20,8 +20,10 @@ from firedrake.slate import slac
 __all__ = ["assemble"]
 
 
-def assemble(f, tensor=None, bcs=None, form_compiler_parameters=None,
-             inverse=False, mat_type=None, sub_mat_type=None, appctx={}, **kwargs):
+def assemble(f, *, tensor=None, bcs=None, form_compiler_parameters=None,
+             inverse=False, mat_type=None, sub_mat_type=None, appctx={},
+             collect_loops=False,
+             allocate_only=False):
     """Evaluate f.
 
     :arg f: a :class:`~ufl.classes.Form`, :class:`~ufl.classes.Expr` or
@@ -53,6 +55,8 @@ def assemble(f, tensor=None, bcs=None, form_compiler_parameters=None,
          not supplied, defaults to ``parameters["default_sub_matrix_type"]``.
     :arg appctx: Additional information to hang on the assembled
          matrix if an implicit matrix is requested (mat_type "matfree").
+    :arg collect_loops: Internal argument (users should never set this to True).
+    :arg allocate_only: Internal argument (users should never set this to True).
 
     If f is a :class:`~ufl.classes.Form` then this evaluates the corresponding
     integral(s) and returns a :class:`float` for 0-forms, a
@@ -77,19 +81,6 @@ def assemble(f, tensor=None, bcs=None, form_compiler_parameters=None,
     1-form, the vector entries at boundary nodes are set to the
     boundary condition values.
     """
-
-    if "nest" in kwargs:
-        nest = kwargs.pop("nest")
-        from firedrake.logging import warning, RED
-        warning(RED % "The 'nest' argument is deprecated, please set 'mat_type' instead")
-        if nest is not None:
-            mat_type = "nest" if nest else "aij"
-
-    collect_loops = kwargs.pop("collect_loops", False)
-    allocate_only = kwargs.pop("allocate_only", False)
-    if len(kwargs) > 0:
-        raise TypeError("Unknown keyword arguments '%s'" % ', '.join(kwargs.keys()))
-
     if isinstance(f, (ufl.form.Form, slate.TensorBase)):
         return _assemble(f, tensor=tensor, bcs=solving._extract_bcs(bcs),
                          form_compiler_parameters=form_compiler_parameters,
@@ -103,7 +94,7 @@ def assemble(f, tensor=None, bcs=None, form_compiler_parameters=None,
         raise TypeError("Unable to assemble: %r" % f)
 
 
-def allocate_matrix(f, bcs=None, form_compiler_parameters=None,
+def allocate_matrix(f, *, bcs=None, form_compiler_parameters=None,
                     inverse=False, mat_type=None, sub_mat_type=None, appctx={}):
     """Allocate a matrix given a form.  To be used with :func:`create_assembly_callable`.
 
@@ -117,7 +108,7 @@ def allocate_matrix(f, bcs=None, form_compiler_parameters=None,
                      allocate_only=True)
 
 
-def create_assembly_callable(f, tensor=None, bcs=None, form_compiler_parameters=None,
+def create_assembly_callable(f, *, tensor=None, bcs=None, form_compiler_parameters=None,
                              inverse=False, mat_type=None, sub_mat_type=None):
     """Create a callable object than be used to assemble f into a tensor.
 
@@ -146,7 +137,7 @@ def create_assembly_callable(f, tensor=None, bcs=None, form_compiler_parameters=
 
 
 @utils.known_pyop2_safe
-def _assemble(f, tensor=None, bcs=None, form_compiler_parameters=None,
+def _assemble(f, *, tensor=None, bcs=None, form_compiler_parameters=None,
               inverse=False, mat_type=None, sub_mat_type=None,
               appctx={},
               collect_loops=False,
@@ -418,7 +409,7 @@ def _assemble(f, tensor=None, bcs=None, form_compiler_parameters=None,
             # Decoration for applying to matrix maps in extruded case
             decoration = None
             itspace = m.measure_set(integral_type, subdomain_id,
-                                    all_integer_subdomain_ids)
+                                    all_integer_subdomain_ids=all_integer_subdomain_ids)
             if integral_type == "cell":
                 itspace = sdata or itspace
 

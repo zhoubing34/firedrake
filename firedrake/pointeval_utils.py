@@ -15,7 +15,7 @@ from tsfc.coffee import SCALAR_TYPE, generate as generate_coffee
 from tsfc.parameters import default_parameters
 
 
-def compile_element(expression, coordinates, parameters=None):
+def compile_element(expression, coordinates, *, parameters=None):
     """Generates C code for point evaluations.
 
     :arg expression: UFL expression

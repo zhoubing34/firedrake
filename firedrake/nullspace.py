@@ -34,7 +34,7 @@ class VectorSpaceBasis(object):
        should therefore not modify them after instantiation since the
        basis will then be incorrect.
     """
-    def __init__(self, vecs=None, constant=False):
+    def __init__(self, *, vecs=None, constant=False):
         if vecs is None and not constant:
             raise RuntimeError("Must either provide a list of null space vectors, or constant keyword (or both)")
 
@@ -263,7 +263,7 @@ class MixedVectorSpaceBasis(object):
                                                    vectors=self._petsc_vecs,
                                                    comm=self.comm)
 
-    def _apply_monolithic(self, matrix, transpose=False, near=False):
+    def _apply_monolithic(self, matrix, *, transpose=False, near=False):
         """Set this class:`MixedVectorSpaceBasis` as a nullspace for a
         matrix.
 
@@ -293,7 +293,7 @@ class MixedVectorSpaceBasis(object):
             else:
                 matrix.petscmat.setNullSpace(self._nullspace)
 
-    def _apply(self, matrix_or_ises, transpose=False, near=False):
+    def _apply(self, matrix_or_ises, *, transpose=False, near=False):
         """Set this :class:`MixedVectorSpaceBasis` as a nullspace for a matrix
 
         :arg matrix_or_ises: either a :class:`~.MatrixBase` to set a

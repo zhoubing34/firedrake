@@ -86,9 +86,9 @@ def test_assemble_with_tensor(mesh):
     L = v*dx
     f = Function(V)
     # Assemble a form into f
-    f = assemble(L, f)
+    f = assemble(L, tensor=f)
     # Assemble a different form into f
-    f = assemble(Constant(2)*L, f)
+    f = assemble(Constant(2)*L, tensor=f)
     # Make sure we get the result of the last assembly
     assert np.allclose(f.dat.data, 2*assemble(L).dat.data, rtol=1e-14)
 
@@ -100,7 +100,7 @@ def test_assemble_mat_with_tensor(mesh):
     a = u*v*dx
     M = assemble(a)
     # Assemble a different form into M
-    M = assemble(Constant(2)*a, M)
+    M = assemble(Constant(2)*a, tensor=M)
     # Make sure we get the result of the last assembly
     assert np.allclose(M.M.values, 2*assemble(a).M.values, rtol=1e-14)
 

@@ -51,7 +51,7 @@ class Constant(ufl.Coefficient):
        :func:`~.Mesh` as the domain argument.
     """
 
-    def __init__(self, value, domain=None):
+    def __init__(self, value, *, domain=None):
         # Init also called in mesh constructor, but constant can be built without mesh
         utils._init()
         self.dat, rank, shape = _globalify(value)

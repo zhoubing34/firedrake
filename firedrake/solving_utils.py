@@ -9,7 +9,7 @@ from firedrake.formmanipulation import ExtractSubBlock
 from firedrake.logging import warning
 
 
-def flatten_parameters(parameters, sep="_"):
+def flatten_parameters(parameters, *, sep="_"):
     """Flatten a nested parameters dict, joining keys with sep.
 
     :arg parameters: a dict to flatten.
@@ -256,7 +256,8 @@ class _SNESContext(object):
     get the context (which is one of these objects) to find the
     Firedrake level information.
     """
-    def __init__(self, problem, mat_type, pmat_type, appctx=None, pre_jacobian_callback=None, pre_function_callback=None):
+    def __init__(self, problem, mat_type, pmat_type, *,
+                 appctx=None, pre_jacobian_callback=None, pre_function_callback=None):
         from firedrake.assemble import allocate_matrix, create_assembly_callable
         if pmat_type is None:
             pmat_type = mat_type
@@ -344,7 +345,8 @@ class _SNESContext(object):
         snes.setJacobian(self.form_jacobian, J=self._jac.petscmat,
                          P=self._pjac.petscmat)
 
-    def set_nullspace(self, nullspace, ises=None, transpose=False, near=False):
+    def set_nullspace(self, nullspace, *,
+                      ises=None, transpose=False, near=False):
         if nullspace is None:
             return
         nullspace._apply(self._jac, transpose=transpose, near=near)

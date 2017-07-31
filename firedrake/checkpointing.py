@@ -50,7 +50,7 @@ class DumbCheckpoint(object):
        breakages.
 
     """
-    def __init__(self, basename, single_file=True,
+    def __init__(self, basename, *, single_file=True,
                  mode=FILE_UPDATE, comm=None):
         self.comm = dup_comm(comm or COMM_WORLD)
         self.mode = mode
@@ -63,7 +63,7 @@ class DumbCheckpoint(object):
         self._fidx = 0
         self.new_file()
 
-    def set_timestep(self, t, idx=None):
+    def set_timestep(self, t, *, idx=None):
         """Set the timestep for output.
 
         :arg t: The timestep value.
@@ -96,7 +96,7 @@ class DumbCheckpoint(object):
         steps = self.read_attribute("/", "stored_time_steps", [])
         return steps, indices
 
-    def new_file(self, name=None):
+    def new_file(self, *, name=None):
         """Open a new on-disk file for writing checkpoint data.
 
         :arg name: An optional name to use for the file, an extension
@@ -190,7 +190,7 @@ class DumbCheckpoint(object):
             self.h5file.require_group(group)
             self.write_attribute(group, "timestep", self._time)
 
-    def store(self, function, name=None):
+    def store(self, function, *, name=None):
         """Store a function in the checkpoint file.
 
         :arg function: The function to store.
@@ -215,7 +215,7 @@ class DumbCheckpoint(object):
             v.setName(oname)
             self.vwr.popGroup()
 
-    def load(self, function, name=None):
+    def load(self, function, *, name=None):
         """Store a function from the checkpoint file.
 
         :arg function: The function to load values into.
@@ -251,7 +251,7 @@ class DumbCheckpoint(object):
         except KeyError:
             raise AttributeError("Object '%s' not found" % obj)
 
-    def read_attribute(self, obj, name, default=None):
+    def read_attribute(self, obj, name, *, default=None):
         """Read an HDF5 attribute on a specified data object.
 
         :arg obj: The path to the data object.
@@ -309,7 +309,7 @@ class HDF5File(object):
     closes the file when the scope is exited).
 
     """
-    def __init__(self, filename, file_mode, comm=None):
+    def __init__(self, filename, file_mode, *, comm=None):
         self.comm = dup_comm(comm or COMM_WORLD)
 
         self._filename = filename
@@ -373,7 +373,7 @@ class HDF5File(object):
         """Flush any pending writes."""
         self._h5file.flush()
 
-    def write(self, function, path, timestamp=None):
+    def write(self, function, path, *, timestamp=None):
         """Store a function in the checkpoint file.
 
         :arg function: The function to store.
@@ -405,7 +405,7 @@ class HDF5File(object):
             attr["timestamp"] = timestamp
             self._set_timestamp(timestamp)
 
-    def read(self, function, path, timestamp=None):
+    def read(self, function, path, *, timestamp=None):
         """Store a function from the checkpoint file.
 
         :arg function: The function to load values into.

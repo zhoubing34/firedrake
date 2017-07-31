@@ -16,7 +16,7 @@ __all__ = ['project', 'Projector']
 _solve = solving.solve
 
 
-def project(v, V, bcs=None, mesh=None,
+def project(v, V, *, bcs=None, mesh=None,
             solver_parameters=None,
             form_compiler_parameters=None,
             name=None):
@@ -117,7 +117,7 @@ class Projector(object):
          projecting.
     """
 
-    def __init__(self, v, v_out, bcs=None, solver_parameters=None, constant_jacobian=True):
+    def __init__(self, v, v_out, *, bcs=None, solver_parameters=None, constant_jacobian=True):
 
         if isinstance(v, expression.Expression) or \
            not isinstance(v, (ufl.core.expr.Expr, function.Function)):

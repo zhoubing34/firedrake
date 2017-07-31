@@ -4,7 +4,7 @@ from pyop2 import op2
 
 
 def make_extruded_coords(extruded_topology, base_coords, ext_coords,
-                         layer_height, extrusion_type='uniform', kernel=None):
+                         layer_height, *, extrusion_type='uniform', kernel=None):
     """
     Given either a kernel or a (fixed) layer_height, compute an
     extruded coordinate field for an extruded mesh.

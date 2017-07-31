@@ -163,7 +163,7 @@ def write_array(f, ofunction):
     array.tofile(f)
 
 
-def write_array_descriptor(f, ofunction, offset=None, parallel=False):
+def write_array_descriptor(f, ofunction, *, offset=None, parallel=False):
     array, name, _ = ofunction
     shape = array.shape[1:]
     ncmp = {0: "",
@@ -231,7 +231,7 @@ class File(object):
     _footer = (b'</Collection>\n'
                b'</VTKFile>\n')
 
-    def __init__(self, filename, project_output=False, comm=None, restart=0):
+    def __init__(self, filename, *, project_output=False, comm=None, restart=0):
         """Create an object for outputting data for visualisation.
 
         This produces output in VTU format, suitable for visualisation
@@ -493,7 +493,7 @@ class File(object):
             f.write(b'</VTKFile>\n')
         return fname
 
-    def write(self, *functions, **kwargs):
+    def write(self, *functions, time=None):
         """Write functions to this :class:`File`.
 
         :arg functions: list of functions to write.
@@ -503,7 +503,6 @@ class File(object):
         However, all calls to :meth:`write` must use the same set of
         functions.
         """
-        time = kwargs.get("time", None)
         vtu = self._write_vtu(*functions)
         if time is None:
             time = next(self.timestep)

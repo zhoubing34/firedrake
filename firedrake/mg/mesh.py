@@ -12,7 +12,7 @@ __all__ = ["MeshHierarchy", "ExtrudedMeshHierarchy"]
 
 
 class MeshHierarchy(object):
-    def __init__(self, m, refinement_levels, refinements_per_level=1, reorder=None):
+    def __init__(self, m, refinement_levels, *, refinements_per_level=1, reorder=None):
         """Build a hierarchy of meshes by uniformly refining a coarse mesh.
 
         :arg m: the coarse :func:`~.Mesh` to refine
@@ -122,7 +122,7 @@ class MeshHierarchy(object):
 
 
 class ExtrudedMeshHierarchy(MeshHierarchy):
-    def __init__(self, mesh_hierarchy, layers, kernel=None, layer_height=None,
+    def __init__(self, mesh_hierarchy, layers, *, kernel=None, layer_height=None,
                  extrusion_type='uniform', gdim=None):
         """Build a hierarchy of extruded meshes by extruded a hierarchy of meshes.
 

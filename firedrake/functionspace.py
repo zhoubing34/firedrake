@@ -59,7 +59,7 @@ def make_scalar_element(mesh, family, degree, vfamily, vdegree):
         return ufl.FiniteElement(family, cell=cell, degree=degree)
 
 
-def check_element(element, top=True):
+def check_element(element, *, top=True):
     """Run some checks on the provided element.
 
     The :class:`~ufl.classes.VectorElement` and

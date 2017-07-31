@@ -96,13 +96,13 @@ def test_mismatching_shape_interpolation(V):
 
 def test_function_val(V):
     """Initialise a Function with a NumPy array."""
-    f = Function(V, np.ones((V.node_count, V.value_size)))
+    f = Function(V, val=np.ones((V.node_count, V.value_size)))
     assert (f.dat.data_ro == 1.0).all()
 
 
 def test_function_dat(V):
     """Initialise a Function with an op2.Dat."""
-    f = Function(V, op2.Dat(V.node_set**V.value_size))
+    f = Function(V, val=op2.Dat(V.node_set**V.value_size))
     f.interpolate(Expression("1"))
     assert (f.dat.data_ro == 1.0).all()
 
@@ -117,7 +117,7 @@ def test_function_name(V):
     f.rename(name="baz")
     assert f.name() == "baz" and f.label() == "bar"
 
-    f.rename("foo", "quux")
+    f.rename(name="foo", label="quux")
     assert f.name() == "foo" and f.label() == "quux"
 
     f.rename(name="bar", label="baz")

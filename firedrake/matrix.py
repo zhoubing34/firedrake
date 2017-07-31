@@ -267,17 +267,15 @@ class ImplicitMatrix(MatrixBase):
         by a :class:`.Function`).
 
     """
-    def __init__(self, a, bcs, *args, **kwargs):
+    def __init__(self, a, bcs, *, appctx=None, fc_params=None):
         # sets self._a and self._bcs
         super(ImplicitMatrix, self).__init__(a, bcs)
-
-        appctx = kwargs.get("appctx", {})
 
         from firedrake.matrix_free.operators import ImplicitMatrixContext
         ctx = ImplicitMatrixContext(a,
                                     row_bcs=self.bcs,
                                     col_bcs=self.bcs,
-                                    fc_params=kwargs["fc_params"],
+                                    fc_params=fc_params,
                                     appctx=appctx)
         self.petscmat = PETSc.Mat().create(comm=self.comm)
         self.petscmat.setType("python")

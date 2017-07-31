@@ -15,7 +15,7 @@ __all__ = ["LinearSolver"]
 
 class LinearSolver(solving_utils.ParametersMixin):
 
-    def __init__(self, A, P=None, solver_parameters=None,
+    def __init__(self, A, *, P=None, solver_parameters=None,
                  nullspace=None, transpose_nullspace=None,
                  near_nullspace=None, options_prefix=None):
         """A linear solver for assembled systems (Ax = b).

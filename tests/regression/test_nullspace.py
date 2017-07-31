@@ -32,7 +32,7 @@ def test_orthonormalize():
     a = Function(V).interpolate(Constant((2, 0)))
     b = Function(V).interpolate(Constant((0, 2)))
 
-    basis = VectorSpaceBasis([a, b])
+    basis = VectorSpaceBasis(vecs=[a, b])
     assert basis.is_orthogonal()
     assert not basis.is_orthonormal()
 

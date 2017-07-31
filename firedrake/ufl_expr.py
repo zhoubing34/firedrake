@@ -28,7 +28,7 @@ class Argument(ufl.argument.Argument):
        :func:`TestFunction`, with a number of ``1`` it is used as
        a :func:`TrialFunction`.
     """
-    def __init__(self, function_space, number, part=None):
+    def __init__(self, function_space, number, *, part=None):
         super(Argument, self).__init__(function_space.ufl_function_space(),
                                        number, part=part)
         self._function_space = function_space
@@ -51,7 +51,7 @@ class Argument(ufl.argument.Argument):
     def make_dat(self):
         return self.function_space().make_dat()
 
-    def reconstruct(self, function_space=None,
+    def reconstruct(self, *, function_space=None,
                     number=None, part=None):
         if function_space is None or function_space == self.function_space():
             function_space = self.function_space()
@@ -70,7 +70,7 @@ class Argument(ufl.argument.Argument):
         return Argument(function_space, number, part=part)
 
 
-def TestFunction(function_space, part=None):
+def TestFunction(function_space, *, part=None):
     """Build a test function on the specified function space.
 
     :arg function_space: the :class:`.FunctionSpace` to build the test
@@ -79,7 +79,7 @@ def TestFunction(function_space, part=None):
     return Argument(function_space, 0, part=part)
 
 
-def TrialFunction(function_space, part=None):
+def TrialFunction(function_space, *, part=None):
     """Build a trial function on the specified function space.
 
     :arg function_space: the :class:`.FunctionSpace` to build the trial

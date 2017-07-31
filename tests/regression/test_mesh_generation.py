@@ -25,12 +25,12 @@ def test_interval():
 
 
 def test_interval_three_arg():
-    assert abs(integrate_one(IntervalMesh(10, -1, 1)) - 2.0) < 1e-3
+    assert abs(integrate_one(IntervalMesh(10, -1, right=1)) - 2.0) < 1e-3
 
 
 def test_interval_negative_length():
     with pytest.raises(ValueError):
-        IntervalMesh(10, 2, 1)
+        IntervalMesh(10, 2, right=1)
 
 
 def test_periodic_unit_interval():
@@ -57,7 +57,7 @@ def run_one_element_advection():
     nx = 20
     m = PeriodicRectangleMesh(nx, 1, 1.0, 1.0, quadrilateral=True)
     nlayers = 20
-    mesh = ExtrudedMesh(m, nlayers, 1.0/nlayers)
+    mesh = ExtrudedMesh(m, nlayers, layer_height=1.0/nlayers)
     Vdg = FunctionSpace(mesh, "DG", 1)
     Vu = VectorFunctionSpace(mesh, "DG", 1)
     q0 = Function(Vdg).interpolate(Expression("cos(2*pi*x[0])*cos(pi*x[2])"))

@@ -244,7 +244,7 @@ class FunctionSpace(object):
        which provides extra error checking and argument sanitising.
 
     """
-    def __init__(self, mesh, element, name=None):
+    def __init__(self, mesh, element, *, name=None):
         super(FunctionSpace, self).__init__()
         if type(element) is ufl.MixedElement:
             raise ValueError("Can't create FunctionSpace for MixedElement")
@@ -416,7 +416,7 @@ class FunctionSpace(object):
         See also :attr:`dof_count` and :attr:`node_count`."""
         return self.dof_dset.layout_vec.getSize()
 
-    def make_dat(self, val=None, valuetype=None, name=None, uid=None):
+    def make_dat(self, *, val=None, valuetype=None, name=None, uid=None):
         """Return a newly allocated :class:`pyop2.Dat` defined on the
         :attr:`dof_dset` of this :class:`.Function`."""
         return op2.Dat(self.dof_dset, val, valuetype, name, uid=uid)
@@ -545,7 +545,7 @@ class MixedFunctionSpace(object):
        but should instead use the functional interface provided by
        :func:`.MixedFunctionSpace`.
     """
-    def __init__(self, spaces, name=None):
+    def __init__(self, spaces, *, name=None):
         super(MixedFunctionSpace, self).__init__()
         self._spaces = tuple(IndexedFunctionSpace(i, s, self)
                              for i, s in enumerate(spaces))
@@ -716,14 +716,14 @@ class MixedFunctionSpace(object):
         are referenced, not all nodes in cells touching the surface.'''
         return op2.MixedMap(s.exterior_facet_boundary_node_map for s in self._spaces)
 
-    def make_dat(self, val=None, valuetype=None, name=None, uid=None):
+    def make_dat(self, *, val=None, valuetype=None, name=None, uid=None):
         """Return a newly allocated :class:`pyop2.MixedDat` defined on the
         :attr:`dof_dset` of this :class:`MixedFunctionSpace`."""
         if val is not None:
             assert len(val) == len(self)
         else:
             val = [None for _ in self]
-        return op2.MixedDat(s.make_dat(v, valuetype, "%s[cmpt-%d]" % (name, i), utils._new_uid())
+        return op2.MixedDat(s.make_dat(val=v, valuetype=valuetype, name="%s[cmpt-%d]" % (name, i), uid=utils._new_uid())
                             for i, (s, v) in enumerate(zip(self._spaces, val)))
 
     @utils.cached_property
@@ -757,7 +757,7 @@ class ProxyFunctionSpace(FunctionSpace):
        Users should not build a :class:`ProxyFunctionSpace` directly,
        it is mostly used as an internal implementation detail.
     """
-    def __new__(cls, mesh, element, name=None):
+    def __new__(cls, mesh, element, *, name=None):
         topology = mesh.topology
         self = super(ProxyFunctionSpace, cls).__new__(cls)
         if mesh is not topology:
@@ -789,14 +789,15 @@ class ProxyFunctionSpace(FunctionSpace):
     no_dats = False
     """Can this proxy make :class:`pyop2.Dat` objects"""
 
-    def make_dat(self, *args, **kwargs):
+    def make_dat(self, *, val=None, valuetype=None, name=None, uid=None):
         """Create a :class:`pyop2.Dat`.
 
         :raises ValueError: if :attr:`no_dats` is ``True``.
         """
         if self.no_dats:
             raise ValueError("Can't build Function on %s function space" % self.identifier)
-        return super(ProxyFunctionSpace, self).make_dat(*args, **kwargs)
+        return super(ProxyFunctionSpace, self).make_dat(val=val, valuetype=valuetype,
+                                                        name=name, uid=uid)
 
 
 def IndexedFunctionSpace(index, space, parent):
@@ -890,7 +891,7 @@ class RealFunctionSpace(FunctionSpace):
         dmhooks.set_function_space(dm, self)
         return dm
 
-    def make_dat(self, val=None, valuetype=None, name=None, uid=None):
+    def make_dat(self, *, val=None, valuetype=None, name=None, uid=None):
         """Return a newly allocated :class:`pyop2.Global` representing the
         data for a :class:`.Function` on this space."""
         return op2.Global(self.value_size, val, valuetype, name, self.comm)

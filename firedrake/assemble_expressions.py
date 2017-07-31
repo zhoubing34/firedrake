@@ -57,7 +57,7 @@ class DummyFunction(ufl.Coefficient):
     formatted.
     """
 
-    def __init__(self, function, argnum, intent=op2.READ):
+    def __init__(self, function, argnum, *, intent=op2.READ):
         ufl.Coefficient.__init__(self, function.ufl_function_space())
 
         self.argnum = argnum
@@ -533,7 +533,7 @@ def expression_kernel(expr, args):
                       "expression")
 
 
-def evaluate_preprocessed_expression(kernel, args, subset=None):
+def evaluate_preprocessed_expression(kernel, args, *, subset=None):
     # We need to splice the args according to the components of the
     # MixedFunctionSpace if we have one
     for j, dats in enumerate(zip(*tuple(a.function.dat for a in args))):
@@ -544,7 +544,7 @@ def evaluate_preprocessed_expression(kernel, args, subset=None):
 
 
 @utils.known_pyop2_safe
-def evaluate_expression(expr, subset=None):
+def evaluate_expression(expr, *, subset=None):
     """Evaluates UFL expressions on :class:`.Function`\s."""
 
     # We cache the generated kernel and the argument list on the
@@ -572,7 +572,7 @@ def evaluate_expression(expr, subset=None):
     for tree in ExpressionSplitter().split(expr):
         e, args, _ = ExpressionWalker().walk(tree)
         k = expression_kernel(e, args)
-        evaluate_preprocessed_expression(k, args, subset)
+        evaluate_preprocessed_expression(k, args, subset=subset)
         # Replace function slot by weakref to avoid leaking objects
         for a in args:
             a.function = weakref.proxy(a.function)
@@ -582,12 +582,12 @@ def evaluate_expression(expr, subset=None):
 
 
 @timed_function("AssembleExpression")
-def assemble_expression(expr, subset=None):
+def assemble_expression(expr, *, subset=None):
     """Evaluates UFL expressions on :class:`.Function`\s pointwise and assigns
     into a new :class:`.Function`."""
 
     result = function.Function(ExpressionWalker().walk(expr)[2])
-    evaluate_expression(Assign(result, expr), subset)
+    evaluate_expression(Assign(result, expr), subset=subset)
     return result
 
 

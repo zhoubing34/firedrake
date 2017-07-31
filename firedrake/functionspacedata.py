@@ -423,7 +423,7 @@ class FunctionSpaceData(object):
         self.map_caches["boundary_node"][method] = val
         return val
 
-    def get_map(self, V, entity_set, map_arity, bcs, name, offset, parent,
+    def get_map(self, V, entity_set, map_arity, bcs, name, offset, parent, *,
                 kind=None):
         """Return a :class:`pyop2.Map` from some topological entity to
         degrees of freedom.

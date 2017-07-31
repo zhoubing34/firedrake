@@ -7,7 +7,7 @@ from firedrake.logging import warning
 __all__ = ['errornorm', 'norm']
 
 
-def errornorm(u, uh, norm_type="L2", degree_rise=None, mesh=None):
+def errornorm(u, uh, *, norm_type="L2", degree_rise=None, mesh=None):
     """Compute the error :math:`e = u - u_h` in the specified norm.
 
     :arg u: a :class:`.Function` or UFL expression containing an "exact" solution
@@ -36,7 +36,7 @@ def errornorm(u, uh, norm_type="L2", degree_rise=None, mesh=None):
     return norm(u - uh, norm_type=norm_type, mesh=mesh)
 
 
-def norm(v, norm_type="L2", mesh=None):
+def norm(v, *, norm_type="L2", mesh=None):
     """Compute the norm of ``v``.
 
     :arg v: a ufl expression (:class:`~.ufl.classes.Expr`) to compute the norm of

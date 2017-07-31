@@ -44,8 +44,8 @@ class _Facets(object):
     .. warning::
 
        The unique_markers argument **must** be the same on all processes."""
-    def __init__(self, mesh, classes, kind, facet_cell, local_facet_number, markers=None,
-                 unique_markers=None):
+    def __init__(self, mesh, classes, kind, facet_cell, local_facet_number,
+                 *, markers=None, unique_markers=None):
 
         self.mesh = mesh
 
@@ -92,7 +92,7 @@ class _Facets(object):
 
         return op2.Subset(self.set, [])
 
-    def measure_set(self, integral_type, subdomain_id,
+    def measure_set(self, integral_type, subdomain_id, *,
                     all_integer_subdomain_ids=None):
         """Return an iteration set appropriate for the requested integral type.
 
@@ -115,7 +115,8 @@ class _Facets(object):
                              "exterior_facet_top",
                              "interior_facet_horiz"):
             # these iterate over the base cell set
-            return self.mesh.cell_subset(subdomain_id, all_integer_subdomain_ids)
+            return self.mesh.cell_subset(subdomain_id,
+                                         all_integer_subdomain_ids=all_integer_subdomain_ids)
         elif not (integral_type.startswith("exterior_") or
                   integral_type.startswith("interior_")):
             raise ValueError("Don't know how to construct measure for '%s'" % integral_type)
@@ -176,7 +177,7 @@ class _Facets(object):
                        "facet_to_cell_map")
 
 
-def _from_gmsh(filename, comm=None):
+def _from_gmsh(filename, *, comm=None):
     """Read a Gmsh .msh file from `filename`.
 
     :kwarg comm: Optional communicator to build the mesh on (defaults to
@@ -193,7 +194,7 @@ def _from_gmsh(filename, comm=None):
     return gmsh_plex
 
 
-def _from_exodus(filename, comm):
+def _from_exodus(filename, *, comm=None):
     """Read an Exodus .e or .exo file from `filename`.
 
     :arg comm: communicator to build the mesh on.
@@ -203,7 +204,7 @@ def _from_exodus(filename, comm):
     return plex
 
 
-def _from_cgns(filename, comm):
+def _from_cgns(filename, *, comm=None):
     """Read a CGNS .cgns file from `filename`.
 
     :arg comm: communicator to build the mesh on.
@@ -212,7 +213,7 @@ def _from_cgns(filename, comm):
     return plex
 
 
-def _from_triangle(filename, dim, comm):
+def _from_triangle(filename, dim, *, comm=None):
     """Read a set of triangle mesh files from `filename`.
 
     :arg dim: The embedding dimension.
@@ -526,7 +527,7 @@ class MeshTopology(object):
 
         return _Facets(self, classes, kind,
                        facet_cell, local_facet_number,
-                       markers, unique_markers=unique_markers)
+                       markers=markers, unique_markers=unique_markers)
 
     @utils.cached_property
     def exterior_facets(self):
@@ -625,7 +626,7 @@ class MeshTopology(object):
         size = list(self._entity_classes[self.cell_dimension(), :])
         return op2.Set(size, "Cells", comm=self.comm)
 
-    def cell_subset(self, subdomain_id, all_integer_subdomain_ids=None):
+    def cell_subset(self, subdomain_id, *, all_integer_subdomain_ids=None):
         """Return a subset over cells with the given subdomain_id.
 
         :arg subdomain_id: The subdomain of the mesh to iterate over.
@@ -667,7 +668,7 @@ class MeshTopology(object):
                                                   subdomain_id)
             return self._subsets.setdefault(key, op2.Subset(self.cell_set, indices))
 
-    def measure_set(self, integral_type, subdomain_id,
+    def measure_set(self, integral_type, subdomain_id, *,
                     all_integer_subdomain_ids=None):
         """Return an iteration set appropriate for the requested integral type.
 
@@ -690,15 +691,15 @@ class MeshTopology(object):
         if all_integer_subdomain_ids is not None:
             all_integer_subdomain_ids = all_integer_subdomain_ids.get(integral_type, None)
         if integral_type == "cell":
-            return self.cell_subset(subdomain_id, all_integer_subdomain_ids)
+            return self.cell_subset(subdomain_id, all_integer_subdomain_ids=all_integer_subdomain_ids)
         elif integral_type in ("exterior_facet", "exterior_facet_vert",
                                "exterior_facet_top", "exterior_facet_bottom"):
             return self.exterior_facets.measure_set(integral_type, subdomain_id,
-                                                    all_integer_subdomain_ids)
+                                                    all_integer_subdomain_ids=all_integer_subdomain_ids)
         elif integral_type in ("interior_facet", "interior_facet_vert",
                                "interior_facet_horiz"):
             return self.interior_facets.measure_set(integral_type, subdomain_id,
-                                                    all_integer_subdomain_ids)
+                                                    all_integer_subdomain_ids=all_integer_subdomain_ids)
         else:
             raise ValueError("Unknown integral type '%s'" % integral_type)
 
@@ -749,23 +750,16 @@ class ExtrudedMeshTopology(MeshTopology):
         """
         return self._base_mesh.cell_closure
 
-    @utils.cached_property
-    def exterior_facets(self):
-        exterior_facets = self._base_mesh.exterior_facets
-        return _Facets(self, exterior_facets.classes,
-                       "exterior",
-                       exterior_facets.facet_cell,
-                       exterior_facets.local_facet_number,
-                       exterior_facets.markers,
-                       unique_markers=exterior_facets.unique_markers)
-
-    @utils.cached_property
-    def interior_facets(self):
-        interior_facets = self._base_mesh.interior_facets
-        return _Facets(self, interior_facets.classes,
-                       "interior",
-                       interior_facets.facet_cell,
-                       interior_facets.local_facet_number)
+    def _facets(self, kind):
+        if kind not in ["interior", "exterior"]:
+            raise ValueError("Unknown facet type '%s'" % kind)
+        base = getattr(self._base_mesh, "%s_facets" % kind)
+        return _Facets(self, base.classes,
+                       kind,
+                       base.facet_cell,
+                       base.local_facet_number,
+                       markers=base.markers,
+                       unique_markers=base.unique_markers)
 
     def make_cell_node_list(self, global_numbering, entity_dofs):
         """Builds the DoF mapping.
@@ -983,7 +977,7 @@ values from f.)"""
         # Build spatial index
         return spatialindex.from_regions(coords_min, coords_max)
 
-    def locate_cell(self, x, tolerance=None):
+    def locate_cell(self, x, *, tolerance=None):
         """Locate cell containg given point.
 
         :arg x: point coordinates
@@ -1103,7 +1097,7 @@ def make_mesh_from_coordinates(coordinates):
 
 
 @timed_function("CreateMesh")
-def Mesh(meshfile, **kwargs):
+def Mesh(meshfile, *, dim=None, reorder=None, comm=COMM_WORLD, distribute=True):
     """Construct a mesh object.
 
     Meshes may either be created by reading from a mesh file, or by
@@ -1120,6 +1114,7 @@ def Mesh(meshfile, **kwargs):
            meshes for better cache locality.  If not supplied the
            default value in ``parameters["reorder_meshes"]``
            is used.
+    :param distribute: Should the mesh be redistributed?
     :param comm: the communicator to use when creating the mesh.  If
            not supplied, then the mesh will be created on COMM_WORLD.
            Ignored if ``meshfile`` is a DMPlex object (in which case
@@ -1156,28 +1151,25 @@ def Mesh(meshfile, **kwargs):
 
     utils._init()
 
-    geometric_dim = kwargs.get("dim", None)
-    reorder = kwargs.get("reorder", None)
+    geometric_dim = dim
     if reorder is None:
         reorder = parameters["reorder_meshes"]
-    distribute = kwargs.get("distribute", True)
 
     if isinstance(meshfile, PETSc.DMPlex):
         name = "plexmesh"
         plex = meshfile
     else:
-        comm = kwargs.get("comm", COMM_WORLD)
         name = meshfile
         basename, ext = os.path.splitext(meshfile)
 
         if ext.lower() in ['.e', '.exo']:
-            plex = _from_exodus(meshfile, comm)
+            plex = _from_exodus(meshfile, comm=comm)
         elif ext.lower() == '.cgns':
-            plex = _from_cgns(meshfile, comm)
+            plex = _from_cgns(meshfile, comm=comm)
         elif ext.lower() == '.msh':
-            plex = _from_gmsh(meshfile, comm)
+            plex = _from_gmsh(meshfile, comm=comm)
         elif ext.lower() == '.node':
-            plex = _from_triangle(meshfile, geometric_dim, comm)
+            plex = _from_triangle(meshfile, geometric_dim, comm=comm)
         else:
             raise RuntimeError("Mesh file %s has unknown format '%s'."
                                % (meshfile, ext[1:]))
@@ -1218,7 +1210,11 @@ def Mesh(meshfile, **kwargs):
 
 
 @timed_function("CreateExtMesh")
-def ExtrudedMesh(mesh, layers, layer_height=None, extrusion_type='uniform', kernel=None, gdim=None):
+def ExtrudedMesh(mesh, layers, *,
+                 layer_height=None,
+                 extrusion_type='uniform',
+                 kernel=None,
+                 gdim=None):
     """Build an extruded mesh from an input mesh
 
     :arg mesh:           the unstructured base mesh

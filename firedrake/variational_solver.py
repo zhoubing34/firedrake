@@ -16,8 +16,8 @@ __all__ = ["LinearVariationalProblem",
 class NonlinearVariationalProblem(object):
     """Nonlinear variational problem F(u; v) = 0."""
 
-    def __init__(self, F, u, bcs=None, J=None,
-                 Jp=None,
+    def __init__(self, F, u, *,
+                 bcs=None, J=None, Jp=None,
                  form_compiler_parameters=None):
         """
         :param F: the nonlinear form
@@ -72,7 +72,15 @@ class NonlinearVariationalProblem(object):
 class NonlinearVariationalSolver(solving_utils.ParametersMixin):
     """Solves a :class:`NonlinearVariationalProblem`."""
 
-    def __init__(self, problem, **kwargs):
+    def __init__(self, problem,
+                 solver_parameters=None,
+                 options_prefix=None,
+                 nullspace=None,
+                 transpose_nullspace=None,
+                 near_nullspace=None,
+                 pre_jacobian_callback=None,
+                 pre_function_callback=None,
+                 appctx=None):
         """
         :arg problem: A :class:`NonlinearVariationalProblem` to solve.
         :kwarg nullspace: an optional :class:`.VectorSpaceBasis` (or
@@ -127,17 +135,8 @@ class NonlinearVariationalSolver(solving_utils.ParametersMixin):
         """
         assert isinstance(problem, NonlinearVariationalProblem)
 
-        parameters = kwargs.get("solver_parameters")
-        if "parameters" in kwargs:
-            raise TypeError("Use solver_parameters, not parameters")
-        nullspace = kwargs.get("nullspace")
-        nullspace_T = kwargs.get("transpose_nullspace")
-        near_nullspace = kwargs.get("near_nullspace")
-        options_prefix = kwargs.get("options_prefix")
-        pre_j_callback = kwargs.get("pre_jacobian_callback")
-        pre_f_callback = kwargs.get("pre_function_callback")
-
-        super(NonlinearVariationalSolver, self).__init__(parameters, options_prefix)
+        super(NonlinearVariationalSolver, self).__init__(solver_parameters,
+                                                         options_prefix)
 
         # Allow anything, interpret "matfree" as matrix_free.
         mat_type = self.parameters.get("mat_type")
@@ -145,14 +144,12 @@ class NonlinearVariationalSolver(solving_utils.ParametersMixin):
         matfree = mat_type == "matfree"
         pmatfree = pmat_type == "matfree"
 
-        appctx = kwargs.get("appctx")
-
         ctx = solving_utils._SNESContext(problem,
                                          mat_type=mat_type,
                                          pmat_type=pmat_type,
                                          appctx=appctx,
-                                         pre_jacobian_callback=pre_j_callback,
-                                         pre_function_callback=pre_f_callback)
+                                         pre_jacobian_callback=pre_jacobian_callback,
+                                         pre_function_callback=pre_function_callback)
 
         # No preconditioner by default for matrix-free
         if (problem.Jp is not None and pmatfree) or matfree:
@@ -172,11 +169,11 @@ class NonlinearVariationalSolver(solving_utils.ParametersMixin):
 
         ctx.set_function(self.snes)
         ctx.set_jacobian(self.snes)
-        ctx.set_nullspace(nullspace, problem.J.arguments()[0].function_space()._ises,
+        ctx.set_nullspace(nullspace, ises=problem.J.arguments()[0].function_space()._ises,
                           transpose=False, near=False)
-        ctx.set_nullspace(nullspace_T, problem.J.arguments()[1].function_space()._ises,
+        ctx.set_nullspace(transpose_nullspace, ises=problem.J.arguments()[1].function_space()._ises,
                           transpose=True, near=False)
-        ctx.set_nullspace(near_nullspace, problem.J.arguments()[0].function_space()._ises,
+        ctx.set_nullspace(near_nullspace, ises=problem.J.arguments()[0].function_space()._ises,
                           transpose=False, near=True)
 
         # Set from options now, so that people who want to noodle with
@@ -187,7 +184,7 @@ class NonlinearVariationalSolver(solving_utils.ParametersMixin):
         dmhooks.set_appctx(dm, self._ctx)
         self.set_from_options(self.snes)
 
-    def solve(self, bounds=None):
+    def solve(self, *, bounds=None):
         """Solve the variational problem.
 
         :arg bounds: Optional bounds on the solution (lower, upper).
@@ -224,7 +221,8 @@ class NonlinearVariationalSolver(solving_utils.ParametersMixin):
 class LinearVariationalProblem(NonlinearVariationalProblem):
     """Linear variational problem a(u, v) = L(v)."""
 
-    def __init__(self, a, L, u, bcs=None, aP=None,
+    def __init__(self, a, L, u, *,
+                 bcs=None, aP=None,
                  form_compiler_parameters=None,
                  constant_jacobian=True):
         """
@@ -240,7 +238,8 @@ class LinearVariationalProblem(NonlinearVariationalProblem):
         :param constant_jacobian: (optional) flag indicating that the
                  Jacobian is constant (i.e. does not depend on
                  varying fields).  If your Jacobian can change, set
-                 this flag to ``False``.
+                 this flag to ``False``.  See also
+                 :meth:`~.LinearVariationalSolver.invalidate_jacobian`.
         """
         # In the linear case, the Jacobian is the equation LHS.
         J = a
@@ -252,7 +251,7 @@ class LinearVariationalProblem(NonlinearVariationalProblem):
 
         F = ufl.action(J, u) - L
 
-        super(LinearVariationalProblem, self).__init__(F, u, bcs, J, aP,
+        super(LinearVariationalProblem, self).__init__(F, u, bcs=bcs, J=J, Jp=aP,
                                                        form_compiler_parameters=form_compiler_parameters)
         self._constant_jacobian = constant_jacobian
 
@@ -260,7 +259,15 @@ class LinearVariationalProblem(NonlinearVariationalProblem):
 class LinearVariationalSolver(NonlinearVariationalSolver):
     """Solves a :class:`LinearVariationalProblem`."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, problem,
+                 solver_parameters=None,
+                 options_prefix=None,
+                 nullspace=None,
+                 transpose_nullspace=None,
+                 near_nullspace=None,
+                 pre_jacobian_callback=None,
+                 pre_function_callback=None,
+                 appctx=None):
         """
         :arg problem: A :class:`LinearVariationalProblem` to solve.
         :kwarg solver_parameters: Solver parameters to pass to PETSc.
@@ -276,12 +283,21 @@ class LinearVariationalSolver(NonlinearVariationalSolver):
                to the solver from the command line in addition to
                through the ``solver_parameters`` dict.
         """
-        parameters = {}
-        parameters.update(kwargs.get("solver_parameters", {}))
-        parameters.setdefault('snes_type', 'ksponly')
-        parameters.setdefault('ksp_rtol', 1.0e-7)
-        kwargs["solver_parameters"] = parameters
-        super(LinearVariationalSolver, self).__init__(*args, **kwargs)
+        if solver_parameters is not None:
+            solver_parameters = solver_parameters.copy()
+        else:
+            solver_parameters = {}
+        solver_parameters.setdefault('snes_type', 'ksponly')
+        solver_parameters.setdefault('ksp_rtol', 1.0e-7)
+        super(LinearVariationalSolver, self).__init__(problem,
+                                                      solver_parameters=solver_parameters,
+                                                      options_prefix=options_prefix,
+                                                      nullspace=nullspace,
+                                                      transpose_nullspace=transpose_nullspace,
+                                                      near_nullspace=near_nullspace,
+                                                      pre_jacobian_callback=pre_jacobian_callback,
+                                                      pre_function_callback=pre_function_callback,
+                                                      appctx=appctx)
 
     def invalidate_jacobian(self):
         """

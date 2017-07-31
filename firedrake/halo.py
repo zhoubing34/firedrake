@@ -63,7 +63,7 @@ class Halo(object):
             self._gnn2unn = None
         self._gnn2unn = dmplex.make_global_numbering(lsec, gsec)
 
-    def begin(self, dat, reverse=False):
+    def begin(self, dat, *, reverse=False):
         """Begin a halo exchange.
 
         :arg dat: The :class:`pyop2.Dat` to start a halo exchange on.
@@ -78,7 +78,7 @@ class Halo(object):
         mtype = _get_mtype(dat)
         dmplex.halo_begin(self.sf, dat, mtype, reverse)
 
-    def end(self, dat, reverse=False):
+    def end(self, dat, *, reverse=False):
         """End a halo exchange.
 
         :arg dat: The :class:`pyop2.Dat` to end a halo exchange on.

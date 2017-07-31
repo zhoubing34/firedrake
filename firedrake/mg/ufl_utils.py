@@ -31,7 +31,7 @@ class CoarsenIntegrand(MultiFunction):
 
     def argument(self, o):
         V = coarsen(o.function_space())
-        return o.reconstruct(V)
+        return o.reconstruct(function_space=V)
 
     def coefficient(self, o):
         return coarsen(o, coefficient_mapping=self.coefficient_mapping)
