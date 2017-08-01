@@ -8,7 +8,38 @@ from . import impl
 from .utils import set_level
 
 
-__all__ = ["MeshHierarchy", "ExtrudedMeshHierarchy"]
+__all__ = ["MeshHierarchy", "NonNestedMeshHierarchy", "ExtrudedMeshHierarchy"]
+
+
+class MeshHierarchyBase(object):
+    def __init__(self, meshes, refinements_per_level=1):
+        self._unskipped_hierarchy = tuple(meshes)
+        self._hierarchy = self._unskipped_hierarchy[::refinements_per_level]
+        for level, m in enumerate(self):
+            set_level(m, self, level)
+        # Attach fractional levels to skipped parts
+        # This allows us to do magic under the hood so that multigrid
+        # on skipping hierarchies still works!
+        for level, m in enumerate(hierarchy):
+            if level % refinements_per_level == 0:
+                continue
+            set_level(m, self, Fraction(level, refinements_per_level))
+        self.refinements_per_level = refinements_per_level
+
+    def __iter__(self):
+        """Iterate over the hierarchy of meshes from coarsest to finest"""
+        for m in self._hierarchy:
+            yield m
+
+    def __len__(self):
+        """Return the size of hierarchy"""
+        return len(self._hierarchy)
+
+    def __getitem__(self, idx):
+        """Return a mesh in the hierarchy
+
+        :arg idx: The :func:`~.Mesh` to return"""
+        return self._hierarchy[idx]
 
 
 class MeshHierarchy(object):
@@ -79,6 +110,8 @@ class MeshHierarchy(object):
             m.init()
             m._overlapped_lgmap = impl.create_lgmap(m._plex)
 
+        super(MeshHierarchy, self).__init__(hierarchy, refinements_per_level=refinements_per_level)
+
         # On coarse mesh n, a map of consistent cell orientations and
         # vertex permutations for the fine cells on each coarse cell.
         self._cells_vperm = []
@@ -92,33 +125,16 @@ class MeshHierarchy(object):
             P1f = functionspace.FunctionSpace(mf, 'CG', 1)
             self._cells_vperm.append(impl.compute_orientations(P1c, P1f, c2f))
 
-        self._hierarchy = tuple(hierarchy[::refinements_per_level])
-        self._unskipped_hierarchy = tuple(hierarchy)
-        for level, m in enumerate(self):
-            set_level(m, self, level)
-        # Attach fractional levels to skipped parts
-        # This allows us to do magic under the hood so that multigrid
-        # on skipping hierarchies still works!
-        for level, m in enumerate(hierarchy):
-            if level % refinements_per_level == 0:
-                continue
-            set_level(m, self, Fraction(level, refinements_per_level))
-        self.refinements_per_level = refinements_per_level
 
-    def __iter__(self):
-        """Iterate over the hierarchy of meshes from coarsest to finest"""
-        for m in self._hierarchy:
-            yield m
+class NonNestedMeshHierarchy(MeshHierarchyBase):
+    def __init__(self, *meshes):
+        """Build a hierarchy of (unrelated) meshes
 
-    def __len__(self):
-        """Return the size of hierarchy"""
-        return len(self._hierarchy)
-
-    def __getitem__(self, idx):
-        """Return a mesh in the hierarchy
-
-        :arg idx: The :func:`~.Mesh` to return"""
-        return self._hierarchy[idx]
+        :arg meshes: the meshes.
+        """
+        head = meshes[0]
+        assert all(head.ufl_cell() == r.ufl_cell() for r in meshes)
+        super(NonNestedMeshHierarchy, self).__init__(meshes)
 
 
 class ExtrudedMeshHierarchy(MeshHierarchy):
