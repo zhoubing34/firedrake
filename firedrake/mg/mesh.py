@@ -20,7 +20,7 @@ class MeshHierarchyBase(object):
         # Attach fractional levels to skipped parts
         # This allows us to do magic under the hood so that multigrid
         # on skipping hierarchies still works!
-        for level, m in enumerate(hierarchy):
+        for level, m in enumerate(meshes):
             if level % refinements_per_level == 0:
                 continue
             set_level(m, self, Fraction(level, refinements_per_level))
