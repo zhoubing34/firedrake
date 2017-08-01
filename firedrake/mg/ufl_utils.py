@@ -282,9 +282,17 @@ def create_interpolation(dmc, dmf):
     cctx = firedrake.dmhooks.get_appctx(dmc)
     fctx = firedrake.dmhooks.get_appctx(dmf)
 
-    V_c = cctx._problem.u.function_space()
-    V_f = fctx._problem.u.function_space()
+    try:
+        V_c = cctx._problem.u.function_space()
+        V_f = fctx._problem.u.function_space()
+    except AttributeError:
+        V_c = firedrake.dmhooks.get_function_space(dmc)
+        V_f = firedrake.dmhooks.get_function_space(dmf)
 
+    mesh_c = V_c.mesh()
+    hierarchy, level = utils.get_level(mesh_c)
+    if isinstance(hierarchy, firedrake.NonNestedMeshHierarchy):
+        return firedrake.Interpolationoperator(V_c, V_f), None
     row_size = V_f.dof_dset.layout_vec.getSizes()
     col_size = V_c.dof_dset.layout_vec.getSizes()
 

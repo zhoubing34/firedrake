@@ -212,7 +212,8 @@ def coarsen(dm, comm):
         cdm = V._coarse.dm
     ctx = get_appctx(dm)
     if ctx is not None:
-        set_appctx(cdm, coarsen(ctx))
+        # FIXME: Need to fix coarsen for non-nested case
+        #set_appctx(cdm, coarsen(ctx))
         # Necessary for MG inside a fieldsplit in a SNES.
         cdm.setKSPComputeOperators(firedrake.solving_utils._SNESContext.compute_operators)
     return cdm

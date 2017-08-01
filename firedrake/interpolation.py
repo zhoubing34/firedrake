@@ -325,10 +325,12 @@ def Interpolationoperator(Vdonor, Vtarget):
 
   from firedrake.petsc import PETSc
   from mpi4py import MPI
-  from modified_pointeval_utils import compile_element, make_c_evaluate
+  from .modified_pointeval_utils import compile_element, make_c_evaluate
   import ctypes
   from pyop2 import compilation
   from firedrake.function import _CFunction
+  import ufl
+  import firedrake
 
   # Initialise the mat PETSc operator
   mat = PETSc.Mat().create(comm=Vdonor.comm)
@@ -339,11 +341,11 @@ def Interpolationoperator(Vdonor, Vtarget):
   mat.setFromOptions()
 
   assert Vdonor.ufl_element() == Vtarget.ufl_element()
-  assert type(Vdonor.ufl_element()) == FiniteElement
+  assert type(Vdonor.ufl_element()) == ufl.FiniteElement
 
   # Interpolate onto a new function in the target space
-  X = interpolate(SpatialCoordinate(Vtarget.mesh()),
-                  FunctionSpace(Vtarget.mesh(), VectorElement(Vdonor.ufl_element())))
+  X = interpolate(ufl.SpatialCoordinate(Vtarget.mesh()),
+                  firedrake.FunctionSpace(Vtarget.mesh(), ufl.VectorElement(Vdonor.ufl_element())))
 
   # Create the local to global map
   mat.setLGMap(rmap=Vtarget.dof_dset.lgmap,
@@ -355,7 +357,7 @@ def Interpolationoperator(Vdonor, Vtarget):
   local_matrix = numpy.empty(Vtarget.finat_element.space_dimension(), dtype="double")
 
   # Save the generated c-code as the evaluator to compile the local matrices
-  src, evaluator = make_c_evaluate(TestFunction(Vdonor))
+  src, evaluator = make_c_evaluate(firedrake.TestFunction(Vdonor))
 
   # Using the kernel and the C generated code to retrieve the matrix
   cfunction = _CFunction()
