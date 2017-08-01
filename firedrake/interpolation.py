@@ -13,7 +13,7 @@ from tsfc import compile_expression_at_points as compile_ufl_kernel
 import firedrake
 from firedrake import utils
 
-__all__ = ("interpolate", "Interpolator")
+__all__ = ("interpolate", "Interpolator", "Interpolationoperator")
 
 
 def interpolate(expr, V, subset=None):
@@ -311,3 +311,81 @@ def compile_c_kernel(expression, to_pts, to_element, fs, coords):
     for _, arg in expression._user_args:
         coefficients.append(GlobalWrapper(arg))
     return op2.Kernel(kernel_code, kernel_code.name), False, tuple(coefficients)
+
+
+def Interpolationoperator(Vdonor, Vtarget):
+  """
+  Function to compute the Interpolation Matrix.
+
+    :param Vdonor: the FunctionSpace from which to interpolate.
+    :param Vtarget: the FunctionSpace to interpolate to.
+
+  Returns the PETSc MAT object containing the Interpolationmatrix.
+  """
+
+  from firedrake.petsc import PETSc
+  from mpi4py import MPI
+  from modified_pointeval_utils import compile_element, make_c_evaluate
+  import ctypes
+  from pyop2 import compilation
+  from firedrake.function import _CFunction
+
+  # Initialise the mat PETSc operator
+  mat = PETSc.Mat().create(comm=Vdonor.comm)
+  mat.setSizes((Vtarget.dof_dset.layout_vec.getSizes(),
+                Vdonor.dof_dset.layout_vec.getSizes()))
+  mat.setUp()
+  mat.setOption(mat.Option.IGNORE_ZERO_ENTRIES, True)
+  mat.setFromOptions()
+
+  assert Vdonor.ufl_element() == Vtarget.ufl_element()
+  assert type(Vdonor.ufl_element()) == FiniteElement
+
+  # Interpolate onto a new function in the target space
+  X = interpolate(SpatialCoordinate(Vtarget.mesh()),
+                  FunctionSpace(Vtarget.mesh(), VectorElement(Vdonor.ufl_element())))
+
+  # Create the local to global map
+  mat.setLGMap(rmap=Vtarget.dof_dset.lgmap,
+               cmap=Vdonor.dof_dset.lgmap)
+
+  # Preallocate the matrix
+  mat.setPreallocationNNZ(Vdonor.cell_node_map().arity)
+  # Set up the local matrix
+  local_matrix = numpy.empty(Vtarget.finat_element.space_dimension(), dtype="double")
+
+  # Save the generated c-code as the evaluator to compile the local matrices
+  src, evaluator = make_c_evaluate(TestFunction(Vdonor))
+
+  # Using the kernel and the C generated code to retrieve the matrix
+  cfunction = _CFunction()
+  cfunction.n_cols = Vdonor.mesh().num_cells()
+  cfunction.n_layers = 1
+  cfunction.coords = Vdonor.mesh().coordinates.dat.data.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+  cfunction.coords_map = Vdonor.mesh().coordinates.function_space().cell_node_list.ctypes.data_as(ctypes.POINTER(ctypes.c_int32))
+  cfunction.f = None
+  cfunction.f_map = None
+  cfunction.sidx = Vdonor.mesh().spatial_index.ctypes
+
+  for i, pt in enumerate(X.dat.data_ro):
+      cell = Vdonor.mesh().locate_cell(pt)
+      cols = Vdonor.cell_node_map().values[cell, ]
+
+      # The array contained in compile_elements is the local matrix
+      local_matrix[:] = 0
+      evaluator(ctypes.pointer(cfunction), pt.ctypes.data,
+                local_matrix.ctypes.data)
+      # clamp small values
+      local_matrix[numpy.isclose(local_matrix, 0, rtol=1e-12)] = 0
+
+      # Use mat.setValue to insert the local matrix into the global matrix
+      mat.setValuesLocal([i], cols, local_matrix, PETSc.InsertMode.INSERT_VALUES)
+
+  # Begin the assembly of the PETSc matrix
+  mat.assemblyBegin()
+
+  # End the assembly
+  mat.assemblyEnd()
+
+  # Return the Interpolation Matrix
+  return mat
