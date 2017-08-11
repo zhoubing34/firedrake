@@ -40,15 +40,15 @@ def projection_wrapper(expr, quadrature_rule, mode):
     V = expr.function_space()
     domain = expr.ufl_domain()
     if mode == ProjectionMode.to_firedrake:
-        kernel = projection_kernel(firedrake.TestFunction(V), domain, quadrature_rule)
+        kernel = projection_kernel(firedrake.TestFunction(V), quadrature_rule)
         input = op2.Global(V.value_size, dtype=expr.dat.dtype)(op2.READ)
         output = expr.dat(op2.INC, expr.cell_node_map()[op2.i[0]])
     elif mode == ProjectionMode.from_firedrake:
-        kernel = projection_kernel(expr, domain, quadrature_rule)
+        kernel = projection_kernel(expr, quadrature_rule)
         input = expr.dat(op2.READ, expr.cell_node_map())
         output = op2.Global(V.value_size, dtype=expr.dat.dtype)(op2.INC)
     else:
-        kernel = projection_kernel(ufl.classes.IntValue(1), domain, quadrature_rule)
+        kernel = projection_kernel(ufl.classes.QuadratureWeight(domain), quadrature_rule)
         input = None
         output = op2.Global(1, dtype=ScalarType)(op2.INC)
 

@@ -146,13 +146,14 @@ def kernel_body(expr, domain, quadrature_rule):
         else:
             # Used for computing scaling factor for particles
             # partially out of the domain
-            assert expr == ufl.classes.IntValue(1)
+            assert type(expr) is ufl.classes.QuadratureWeight
 
     config = dict(interface=builder,
                   ufl_cell=cell,
                   precision=15,
                   point_indices=(q, ),
                   point_expr=point_expr,
+                  weight_expr=quadrature_rule.weight_expression,
                   argument_multiindices=argument_multiindices)
 
     context = tsfc.fem.GemPointContext(**config)
@@ -199,16 +200,14 @@ def kernel_body(expr, domain, quadrature_rule):
     return builder, kernel_args, body
 
 
-def projection_kernel(expr, domain, quadrature_rule):
+def projection_kernel(expr, quadrature_rule):
     """Produce a kernel that interpolates V at points using a provided quadrature rule.
 
     :arg expr: The UFL expression.
-    :arg domain: The mesh.
     :arg quadrature_rule: A quadrature-rule for the unit
         :math:`d-\text{ball}` that integrates to one.
-    :arg transpose: If True, interpolate from points to basis
-        functions.  If False, from basis functions to points.
     """
+    domain = expr.ufl_domain()
     builder, kernel_args, body = kernel_body(expr, domain, quadrature_rule)
 
-    return builder.construct_kernel("interpolate_kernel", kernel_args, body)
+    return builder.construct_kernel("projection_kernel", kernel_args, body)
