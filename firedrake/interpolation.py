@@ -194,9 +194,9 @@ def _interpolator(V, dat, expr, subset):
         args.append(dat(op2.WRITE, V.cell_node_map()))
     if oriented:
         co = mesh.cell_orientations()
-        args.append(co.dat(op2.READ, co.cell_node_map()))
+        args.append(co.dat(op2.READ, co.cell_node_map())[op2.i[0]])
     for coefficient in coefficients:
-        args.append(coefficient.dat(op2.READ, coefficient.cell_node_map()))
+        args.append(coefficient.dat(op2.READ, coefficient.cell_node_map()[op2.i[0]]))
 
     if copy_back:
         return partial(op2.par_loop, *args), partial(dat.copy, output)
