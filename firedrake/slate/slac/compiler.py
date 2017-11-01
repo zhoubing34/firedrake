@@ -236,18 +236,15 @@ def compile_expression(slate_expr, tsfc_parameters=None):
     builder._finalize_kernels_and_update()
 
     # Generate arguments for the macro kernel
-    args = [result, ast.Decl("%s **" % SCALAR_TYPE, coordsym)]
+    args = [result, ast.Decl("%s *" % SCALAR_TYPE, coordsym)]
 
     # Orientation information
     if builder.oriented:
-        args.append(ast.Decl("int **", cell_orientations))
+        args.append(ast.Decl("int *", cell_orientations))
 
     # Coefficient information
     for c in expr_coeffs:
-        if isinstance(c, Constant):
-            ctype = "%s *" % SCALAR_TYPE
-        else:
-            ctype = "%s **" % SCALAR_TYPE
+        ctype = "%s *" % SCALAR_TYPE
         args.extend([ast.Decl(ctype, csym) for csym in builder.coefficient(c)])
 
     # Facet information
@@ -536,7 +533,7 @@ def auxiliary_temporaries(builder, declared_temps):
                 # Declare a temporary for the coefficient
                 V = actee.function_space()
                 shape_array = [(Vi.finat_element.space_dimension(),
-                                np.prod(Vi.shape))
+                                np.prod(Vi.shape, dtype=np.int32))
                                for Vi in V.split()]
                 ctemp = ast.Symbol("auxT%d" % len(declared_temps))
                 shape = sum(n * d for (n, d) in shape_array)
@@ -559,7 +556,7 @@ def auxiliary_temporaries(builder, declared_temps):
 
                     # Inner-loop running over dof_extent
                     coeff_sym = ast.Symbol(builder.coefficient(actee)[i],
-                                           rank=(isym, jsym))
+                                           rank=(ast.Sum(ast.Prod(dof_extent, isym), jsym),))
                     coeff_temp = ast.Symbol(ctemp, rank=(tensor_index,))
                     inner_loop = ast.For(ast.Decl("unsigned int", jsym,
                                                   init=0),

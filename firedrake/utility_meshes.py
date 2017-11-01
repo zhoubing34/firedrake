@@ -110,34 +110,34 @@ cells are not currently supported")
     new_coordinates = Function(coord_fs)
 
     periodic_kernel = """
-    const double pi = 3.141592653589793;
-    const double eps = 1e-12;
-    double a = atan2(old_coords[0][1], old_coords[0][0]) / (2*pi);
-    double b = atan2(old_coords[1][1], old_coords[1][0]) / (2*pi);
-    int swap = 0;
-    if ( a >= b ) {
-        const double tmp = b;
-        b = a;
-        a = tmp;
-        swap = 1;
-    }
-    if ( fabs(b) < eps && a < -eps ) {
-        b = 1.0;
-    }
-    if ( a < -eps ) {
-        a += 1;
-    }
-    if ( b < -eps ) {
-        b += 1;
-    }
-    if ( swap ) {
-        const double tmp = b;
-        b = a;
-        a = tmp;
-    }
-    new_coords[0][0] = a * L[0];
-    new_coords[1][0] = b * L[0];
-    """
+const double pi = 3.141592653589793;
+const double eps = 1e-12;
+double a = atan2(old_coords[1], old_coords[0]) / (2*pi);
+double b = atan2(old_coords[3], old_coords[2]) / (2*pi);
+int swap = 0;
+if ( a >= b ) {
+    const double tmp = b;
+    b = a;
+    a = tmp;
+    swap = 1;
+}
+if ( fabs(b) < eps && a < -eps ) {
+    b = 1.0;
+}
+if ( a < -eps ) {
+    a += 1;
+}
+if ( b < -eps ) {
+    b += 1;
+}
+if ( swap ) {
+    const double tmp = b;
+    b = a;
+    a = tmp;
+}
+new_coords[0] = a * L[0];
+new_coords[1] = b * L[0];
+"""
 
     cL = Constant(length)
 
@@ -504,35 +504,35 @@ Y = 0.0;
 Z = 0.0;
 
 for(int i=0; i<old_coords.dofs; i++) {
-    Y += old_coords[i][1];
-    Z += old_coords[i][2];
+  Y += old_coords[i*3+1];
+  Z += old_coords[i*3+2];
 }
 
 for(int i=0; i<new_coords.dofs; i++) {
-    phi = atan2(old_coords[i][1], old_coords[i][0]);
-    if (fabs(sin(phi)) > bigeps)
-        theta = atan2(old_coords[i][2], old_coords[i][1]/sin(phi) - 1.0);
-    else
-        theta = atan2(old_coords[i][2], old_coords[i][0]/cos(phi) - 1.0);
+  phi = atan2(old_coords[i*3+1], old_coords[i*3]);
+  if (fabs(sin(phi)) > bigeps)
+    theta = atan2(old_coords[i*3+2], old_coords[i*3+1]/sin(phi) - 1.0);
+  else
+    theta = atan2(old_coords[i*3+2], old_coords[i*3]/cos(phi) - 1.0);
 
-    new_coords[i][0] = phi/(2.0*pi);
-    if(new_coords[i][0] < -eps) {
-        new_coords[i][0] += 1.0;
-    }
-    if(fabs(new_coords[i][0]) < eps && Y < 0.0) {
-        new_coords[i][0] = 1.0;
-    }
+  new_coords[i*2] = phi/(2.0*pi);
+  if(new_coords[i*2] < -eps) {
+    new_coords[i*2] += 1.0;
+  }
+  if(fabs(new_coords[i*2]) < eps && Y < 0.0) {
+    new_coords[i*2] = 1.0;
+  }
 
-    new_coords[i][1] = theta/(2.0*pi);
-    if(new_coords[i][1] < -eps) {
-        new_coords[i][1] += 1.0;
-    }
-    if(fabs(new_coords[i][1]) < eps && Z < 0.0) {
-        new_coords[i][1] = 1.0;
-    }
+  new_coords[i*2+1] = theta/(2.0*pi);
+  if(new_coords[i*2+1] < -eps) {
+    new_coords[i*2+1] += 1.0;
+  }
+  if(fabs(new_coords[i*2+1]) < eps && Z < 0.0) {
+    new_coords[i*2+1] = 1.0;
+  }
 
-    new_coords[i][0] *= Lx[0];
-    new_coords[i][1] *= Ly[0];
+  new_coords[i*2] *= Lx[0];
+  new_coords[i*2+1] *= Ly[0];
 }
 """
 
@@ -1361,19 +1361,19 @@ cells in each direction are not currently supported")
     # unravel x coordinates like in periodic interval
     # set y coordinates to z coordinates
     periodic_kernel = """double Y,pi;
-            Y = 0.0;
-            for(int i=0; i<old_coords.dofs; i++) {
-                Y += old_coords[i][1];
-            }
+Y = 0.0;
+for(int i=0; i<old_coords.dofs; i++) {
+  Y += old_coords[i*3+1];
+}
 
-            pi=3.141592653589793;
-            for(int i=0;i<new_coords.dofs;i++){
-            new_coords[i][0] = atan2(old_coords[i][1],old_coords[i][0])/pi/2;
-            if(new_coords[i][0]<0.) new_coords[i][0] += 1;
-            if(new_coords[i][0]==0 && Y<0.) new_coords[i][0] = 1.0;
-            new_coords[i][0] *= Lx[0];
-            new_coords[i][1] = old_coords[i][2]*Ly[0];
-            }"""
+pi=3.141592653589793;
+for(int i=0;i<new_coords.dofs;i++){
+  new_coords[i*2] = atan2(old_coords[i*3+1],old_coords[i*3])/pi/2;
+  if(new_coords[i*2]<0.) new_coords[i*2] += 1;
+  if(new_coords[i*2]==0 && Y<0.) new_coords[i*2] = 1.0;
+  new_coords[i*2] *= Lx[0];
+  new_coords[i*2+1] = old_coords[i*3+2]*Ly[0];
+}"""
 
     cLx = Constant(La)
     cLy = Constant(Lb)

@@ -24,9 +24,9 @@ def integrate_assemble_p0(family, degree):
     f_rhs = Function(fs1)
 
     populate_p0 = op2.Kernel("""
-void populate_tracer(double *x[], double *c[])
+void populate_tracer(double *x, double *c)
 {
-  x[0][0] = (c[1][2] + c[0][2]) / 2;
+  x[0] = (c[3*1+2] + c[2]) / 2;
 }""", "populate_tracer")
 
     coords = f.function_space().mesh().coordinates
@@ -36,13 +36,13 @@ void populate_tracer(double *x[], double *c[])
                  coords.dat(op2.READ, coords.cell_node_map()))
 
     volume = op2.Kernel("""
-void comp_vol(double *rhs[], double *x[], double *y[])
+void comp_vol(double *rhs, double *x, double *y)
 {
-  double area = x[0][0]*(x[2][1]-x[4][1]) + x[2][0]*(x[4][1]-x[0][1])
-               + x[4][0]*(x[0][1]-x[2][1]);
+  double area = x[0]*(x[2*3+1]-x[4*3+1]) + x[2*3]*(x[4*3+1]-x[1])
+               + x[4*3]*(x[1]-x[2*3+1]);
   if (area < 0)
     area = area * (-1.0);
-  rhs[0][0] += 0.5 * area * (x[1][2] - x[0][2]) * y[0][0];
+  rhs[0] += 0.5 * area * (x[1*3+2] - x[2]) * y[0];
 }""", "comp_vol")
 
     op2.par_loop(volume, f.cell_set,
@@ -54,9 +54,9 @@ void comp_vol(double *rhs[], double *x[], double *y[])
     g = op2.Global(1, data=0.0, name='g')
 
     reduction = op2.Kernel("""
-void comp_reduction(double A[1], double *x[])
+void comp_reduction(double A[1], double *x)
 {
-  A[0] += x[0][0];
+  A[0] += x[0];
 }""", "comp_reduction")
 
     op2.par_loop(reduction, f_rhs.cell_set,

@@ -79,7 +79,7 @@ def test_indirect_par_loop_read_const(f, const):
     _, d = f
     const.assign(10.0)
 
-    par_loop("""for (int i = 0; i < d.dofs; i++) d[i][0] = *constant;""",
+    par_loop("""for (int i = 0; i < d.dofs; i++) d[i] = *constant;""",
              dx, {'d': (d, WRITE), 'constant': (const, READ)})
 
     assert np.allclose(d.dat.data, const.dat.data)
@@ -89,7 +89,7 @@ def test_indirect_par_loop_read_const_mixed(f_mixed, const):
     const.assign(10.0)
 
     with pytest.raises(NotImplementedError):
-        par_loop("""for (int i = 0; i < d.dofs; i++) d[i][0] = *constant;""",
+        par_loop("""for (int i = 0; i < d.dofs; i++) d[i] = *constant;""",
                  dx, {'d': (f_mixed, WRITE), 'constant': (const, READ)})
         assert all(np.allclose(f.dat.data, const.dat.data) for f in f_mixed.split())
 
@@ -114,7 +114,7 @@ def test_dict_order_parallel():
         for i, c in enumerate(reversed(consts)):
             arg["c%d" % (len(consts) - i - 1)] = (c, READ)
 
-    par_loop("""for (int i = 0; i < d.dofs; i++) d[i][0] = *c10;""",
+    par_loop("""for (int i = 0; i < d.dofs; i++) d[i] = *c10;""",
              dx, arg)
 
     assert np.allclose(d.dat.data, consts[10].dat.data)
@@ -124,7 +124,7 @@ def test_dict_order_parallel():
 def test_indirect_par_loop_read_const_mixed_component(f_mixed, const, idx):
     const.assign(10.0)
 
-    par_loop("""for (int i = 0; i < d.dofs; i++) d[i][0] = *constant;""",
+    par_loop("""for (int i = 0; i < d.dofs; i++) d[i] = *constant;""",
              dx, {'d': (f_mixed[idx], WRITE), 'constant': (const, READ)})
 
     assert np.allclose(f_mixed.dat[idx].data, const.dat.data)
@@ -142,7 +142,7 @@ def test_cg_max_field(f):
 
     par_loop("""
     for (int i=0; i<c.dofs; i++)
-       c[i][0] = fmax(c[i][0], d[0][0]);""",
+       c[i] = fmax(c[i], d[0]);""",
              dx, {'c': (c, RW), 'd': (d, READ)})
 
     assert (c.dat.data == [1./4, 3./4, 3./4]).all()
@@ -154,7 +154,7 @@ def test_cg_max_field_extruded(f_extruded):
 
     par_loop("""
     for (int i=0; i<c.dofs; i++)
-       c[i][0] = (c[i][0] > d[0][0] ? c[i][0] : d[0][0]);""",
+       c[i] = (c[i] > d[0] ? c[i] : d[0]);""",
              dx, {'c': (c, RW), 'd': (d, READ)})
 
     assert (c.dat.data == [1./4, 1./4, 1./4,
@@ -173,7 +173,7 @@ def test_cell_subdomain(subdomain):
 
     f = Function(V)
     par_loop("""
-    for (int i=0; i<f.dofs; i++) f[i][0] = 1.0;
+    for (int i=0; i<f.dofs; i++) f[i] = 1.0;
     """, dx(subdomain), {'f': (f, WRITE)})
 
     assert np.allclose(f.dat.data, expect.dat.data)
@@ -190,12 +190,12 @@ def test_walk_facets_rt():
 
     par_loop("""
     for (int i = 0; i < f1.dofs; i++) {
-        f2[i][0] = f1[i][0];
+        f2[i] = f1[i];
     }""", dS, {'f1': (f1, READ), 'f2': (f2, WRITE)})
 
     par_loop("""
     for (int i = 0; i < f1.dofs; i++) {
-        f2[i][0] = f1[i][0];
+        f2[i] = f1[i];
     }""", ds, {'f1': (f1, READ), 'f2': (f2, WRITE)})
 
     assert errornorm(f1, f2, degree_rise=0) < 1e-10

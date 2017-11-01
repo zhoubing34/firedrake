@@ -39,22 +39,22 @@ class VertexBasedLimiter(Limiter):
         # Update min and max loop
         self._min_max_loop = """
 for(int i = 0; i < maxq.dofs; i++) {
-    maxq[i][0] = fmax(maxq[i][0],q[0][0]);
-    minq[i][0] = fmin(minq[i][0],q[0][0]);
+  maxq[i] = fmax(maxq[i],q[0]);
+  minq[i] = fmin(minq[i],q[0]);
 }
                              """
         # Perform limiting loop
         self._limit_kernel = """
 double alpha = 1.0;
-double qavg = qbar[0][0];
+double qavg = qbar[0];
 for (int i=0; i < q.dofs; i++) {
-    if (q[i][0] > qavg)
-        alpha = fmin(alpha, fmin(1, (qmax[i][0] - qavg)/(q[i][0] - qavg)));
-    else if (q[i][0] < qavg)
-        alpha = fmin(alpha, fmin(1, (qavg - qmin[i][0])/(qavg - q[i][0])));
+  if (q[i] > qavg)
+    alpha = fmin(alpha, fmin(1, (qmax[i] - qavg)/(q[i] - qavg)));
+  else if (q[i] < qavg)
+    alpha = fmin(alpha, fmin(1, (qavg - qmin[i])/(qavg - q[i])));
 }
 for (int i=0; i<q.dofs; i++) {
-    q[i][0] = qavg + alpha*(q[i][0] - qavg);
+  q[i] = qavg + alpha*(q[i] - qavg);
 }
                              """
 

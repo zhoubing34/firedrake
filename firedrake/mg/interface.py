@@ -78,14 +78,14 @@ def transfer(input, output, typ=None):
         c2f_map = utils.coarse_to_fine_node_map(coarse_V, fine_V)
         args = [kernel, c2f_map.iterset]
         if typ == "prolong":
-            args.append(next.dat(op2.WRITE, c2f_map[op2.i[0]]))
+            args.append(next.dat(op2.WRITE, c2f_map))
             args.append(input.dat(op2.READ, input.cell_node_map()))
         elif typ == "inject":
-            args.append(next.dat(op2.WRITE, next.cell_node_map()[op2.i[0]]))
+            args.append(next.dat(op2.WRITE, next.cell_node_map()))
             args.append(input.dat(op2.READ, c2f_map))
         else:
             next.dat.zero()
-            args.append(next.dat(op2.INC, next.cell_node_map()[op2.i[0]]))
+            args.append(next.dat(op2.INC, next.cell_node_map()))
             args.append(input.dat(op2.READ, c2f_map))
             weights = utils.get_restriction_weights(coarse_V, fine_V)
             if weights is not None:

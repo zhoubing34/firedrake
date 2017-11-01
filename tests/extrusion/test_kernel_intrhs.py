@@ -25,9 +25,9 @@ def integrate_rhs(family, degree):
     f = Function(fs)
 
     populate_p0 = op2.Kernel("""
-void populate_tracer(double *x[], double *c[])
+void populate_tracer(double *x, double *c)
 {
-  x[0][0] = ((c[1][2] + c[0][2]) / 2);
+  x[0] = ((c[1*3+2] + c[2]) / 2);
 }""", "populate_tracer")
 
     coords = f.function_space().mesh().coordinates

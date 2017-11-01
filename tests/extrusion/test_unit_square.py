@@ -20,9 +20,9 @@ def integrate_unit_square(family, degree):
     f = Function(fs)
 
     area = op2.Kernel("""
-void comp_area(double A[1], double *x[], double *y[])
+void comp_area(double A[1], double *x, double *y)
 {
-  double area = (x[1][1]-x[0][1])*(x[2][0]-x[0][0]);
+  double area = (x[1*2+1]-x[1])*(x[2*2]-x[0]);
   if (area < 0)
     area = area * (-1.0);
   A[0] += area;

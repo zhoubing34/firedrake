@@ -82,17 +82,17 @@ def _form_kernel(kernel, measure, args, **kwargs):
                 c, i = func.ufl_operands
                 idx = i._indices[0]._value
                 ndof = c.function_space()[idx].finat_element.space_dimension()
+                dim = c.function_space()[idx].value_size
             else:
                 if len(func.function_space()) > 1:
                     raise NotImplementedError("Must index mixed function in par_loop.")
                 ndof = func.function_space().finat_element.space_dimension()
+                dim = func.function_space().value_size
             if measure.integral_type() == 'interior_facet':
                 ndof *= 2
-            if measure is direct:
-                kargs.append(ast.Decl("double", ast.Symbol(var, (ndof,))))
-            else:
-                kargs.append(ast.Decl("double *", ast.Symbol(var, (ndof,))))
+            kargs.append(ast.Decl("double", ast.Symbol(var, (ndof*dim,))))
         lkernel = lkernel.replace(var+".dofs", str(ndof))
+        lkernel = lkernel.replace(var+".dim", str(ndof))
 
     body = ast.FlatBlock(lkernel)
 

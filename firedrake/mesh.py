@@ -1012,12 +1012,12 @@ values from f.)"""
         coords_max.dat.data.fill(-np.inf)
 
         kernel = """
-    for (int d = 0; d < gdim; d++) {
-        for (int i = 0; i < nodes_per_cell; i++) {
-            f_min[0][d] = fmin(f_min[0][d], f[i][d]);
-            f_max[0][d] = fmax(f_max[0][d], f[i][d]);
-        }
-    }
+for (int d = 0; d < gdim; d++) {
+  for (int i = 0; i < nodes_per_cell; i++) {
+    f_min[d] = fmin(f_min[d], f[i*gdim+d]);
+    f_max[d] = fmax(f_max[d], f[i*gdim+d]);
+  }
+}
 """
 
         cell_node_list = self.coordinates.function_space().cell_node_list
