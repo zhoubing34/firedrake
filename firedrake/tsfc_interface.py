@@ -94,6 +94,7 @@ class TSFCKernel(Cached):
         # FIXME Making the COFFEE parameters part of the cache key causes
         # unnecessary repeated calls to TSFC when actually only the kernel code
         # needs to be regenerated
+        return None
         return md5((form.signature() + name
                     + str(sorted(default_parameters["coffee"].items()))
                     + str(sorted(parameters.items()))
