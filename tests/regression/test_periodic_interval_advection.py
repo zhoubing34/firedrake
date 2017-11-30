@@ -83,7 +83,6 @@ def run_test(degree):
 def test_periodic_1d_advection(degree, threshold):
     l2error = run_test(degree)
     convergence = np.log2(l2error[:-1] / l2error[1:])
-
     assert np.all(convergence > threshold)
 
 

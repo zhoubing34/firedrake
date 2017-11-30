@@ -94,7 +94,6 @@ class TSFCKernel(Cached):
         # FIXME Making the COFFEE parameters part of the cache key causes
         # unnecessary repeated calls to TSFC when actually only the kernel code
         # needs to be regenerated
-        return None
         return md5((form.signature() + name
                     + str(sorted(default_parameters["coffee"].items()))
                     + str(sorted(parameters.items()))
@@ -111,13 +110,14 @@ class TSFCKernel(Cached):
         if self._initialized:
             return
 
-        tree = tsfc_compile_form(form, prefix=name, parameters=parameters)
+        assemble_inverse = parameters.get("assemble_inverse", False)
+        tree = tsfc_compile_form(form, prefix=name, parameters=parameters, coffee=assemble_inverse)
         kernels = []
         for kernel in tree:
             # Set optimization options
             opts = default_parameters["coffee"]
             ast = kernel.ast
-            ast = ast if not parameters.get("assemble_inverse", False) else _inverse(ast)
+            ast = ast if not assemble_inverse else _inverse(ast)
             # Unwind coefficient numbering
             numbers = tuple(number_map[c] for c in kernel.coefficient_numbers)
             kernels.append(KernelInfo(kernel=Kernel(ast, ast.name, opts=opts),
