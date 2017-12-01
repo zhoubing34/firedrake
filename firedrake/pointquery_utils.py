@@ -13,7 +13,7 @@ import gem
 import gem.impero_utils as impero_utils
 
 import tsfc
-import tsfc.kernel_interface.firedrake as firedrake_interface
+import tsfc.kernel_interface.firedrake_coffee as firedrake_interface
 import tsfc.ufl_utils as ufl_utils
 
 from coffee.base import ArrayInit

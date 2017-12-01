@@ -10,7 +10,7 @@ from ufl.algorithms import extract_arguments, extract_coefficients
 import gem
 
 import tsfc
-import tsfc.kernel_interface.firedrake as firedrake_interface
+import tsfc.kernel_interface.firedrake_coffee as firedrake_interface
 from tsfc.coffee import SCALAR_TYPE, generate as generate_coffee
 from tsfc.parameters import default_parameters
 
