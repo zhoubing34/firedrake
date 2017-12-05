@@ -90,16 +90,16 @@ class TSFCKernel(Cached):
         comm.barrier()
 
     @classmethod
-    def _cache_key(cls, form, name, parameters, number_map):
+    def _cache_key(cls, form, name, parameters, number_map, coffee=False):
         # FIXME Making the COFFEE parameters part of the cache key causes
         # unnecessary repeated calls to TSFC when actually only the kernel code
         # needs to be regenerated
-        return md5((form.signature() + name
+        return md5((form.signature() + name + str(coffee)
                     + str(sorted(default_parameters["coffee"].items()))
                     + str(sorted(parameters.items()))
                     + str(number_map)).encode()).hexdigest(), form.ufl_domains()[0].comm
 
-    def __init__(self, form, name, parameters, number_map):
+    def __init__(self, form, name, parameters, number_map, coffee=False):
         """A wrapper object for one or more TSFC kernels compiled from a given :class:`~ufl.classes.Form`.
 
         :arg form: the :class:`~ufl.classes.Form` from which to compile the kernels.
@@ -111,7 +111,7 @@ class TSFCKernel(Cached):
             return
 
         assemble_inverse = parameters.get("assemble_inverse", False)
-        tree = tsfc_compile_form(form, prefix=name, parameters=parameters, coffee=assemble_inverse)
+        tree = tsfc_compile_form(form, prefix=name, parameters=parameters, coffee=assemble_inverse or coffee)
         kernels = []
         for kernel in tree:
             # Set optimization options
@@ -136,7 +136,7 @@ SplitKernel = collections.namedtuple("SplitKernel", ["indices",
                                                      "kinfo"])
 
 
-def compile_form(form, name, parameters=None, inverse=False):
+def compile_form(form, name, parameters=None, inverse=False, coffee=False):
     """Compile a form using TSFC.
 
     :arg form: the :class:`~ufl.classes.Form` to compile.
@@ -193,7 +193,7 @@ def compile_form(form, name, parameters=None, inverse=False):
         number_map = dict((n, coefficient_numbers[c])
                           for (n, c) in enumerate(f.coefficients()))
         kinfos = TSFCKernel(f, name + "".join(map(str, idx)), parameters,
-                            number_map).kernels
+                            number_map, coffee).kernels
         for kinfo in kinfos:
             kernels.append(SplitKernel(idx, kinfo))
     kernels = tuple(kernels)

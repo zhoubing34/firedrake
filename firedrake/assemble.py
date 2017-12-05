@@ -314,8 +314,8 @@ def _assemble(f, tensor=None, bcs=None, form_compiler_parameters=None,
         def mat(testmap, trialmap, i, j):
             m = testmap(test.function_space()[i])
             n = trialmap(trial.function_space()[j])
-            maps = (m[0] if m else None,
-                    n[1 if m else 0] if n else None)
+            maps = (m if m else None,
+                    n if n else None)
             return tensor[i, j](op2.INC, maps)
         result = lambda: result_matrix
         if allocate_only:
