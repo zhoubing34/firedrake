@@ -2,14 +2,19 @@ cimport petsc4py.PETSc as PETSc
 cimport mpi4py.MPI as MPI
 
 cdef extern from "petsc.h":
-   ctypedef long PetscInt
-   ctypedef double PetscReal
-   ctypedef enum PetscBool:
-       PETSC_TRUE, PETSC_FALSE
-   ctypedef enum PetscCopyMode:
-       PETSC_COPY_VALUES,
-       PETSC_OWN_POINTER,
-       PETSC_USE_POINTER
+    ctypedef long PetscInt
+    ctypedef double PetscReal
+    ctypedef enum PetscBool:
+        PETSC_TRUE, PETSC_FALSE
+    ctypedef enum PetscCopyMode:
+        PETSC_COPY_VALUES,
+        PETSC_OWN_POINTER,
+        PETSC_USE_POINTER
+    int PCRegister(const char*, int (*)(PETSc.PetscPC))
+
+cdef extern from "geneo_c.h":
+    int PCGenEOSetup(PETSc.PetscPC, PETSc.PetscIS, PETSc.PetscIS*)
+    int createGenEOPC(PETSc.PetscPC)
 
 cdef extern from "petscsys.h" nogil:
    int PetscMalloc1(PetscInt,void*)
@@ -66,6 +71,8 @@ cdef extern from "petscsf.h" nogil:
     int PetscSFBcastEnd(PETSc.PetscSF,MPI.MPI_Datatype,const void*, void*)
     int PetscSFReduceBegin(PETSc.PetscSF,MPI.MPI_Datatype,const void*, void*,MPI.MPI_Op)
     int PetscSFReduceEnd(PETSc.PetscSF,MPI.MPI_Datatype,const void*, void*,MPI.MPI_Op)
+    int PetscSFGatherBegin(PETSc.PetscSF,MPI.MPI_Datatype,const void*, void*)
+    int PetscSFGatherEnd(PETSc.PetscSF,MPI.MPI_Datatype,const void*, void*)
 
 cdef extern from "petscbt.h" nogil:
     ctypedef char * PetscBT

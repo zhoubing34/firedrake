@@ -60,8 +60,21 @@ if 'CC' not in env:
     env['CC'] = "mpicc"
 
 petsc_dirs = get_petsc_dir()
+if os.getenv("SLEPC_DIR"):
+    petsc_dirs += (os.path.join(os.getenv("SLEPC_DIR"), os.getenv("PETSC_ARCH")), )
 include_dirs = [np.get_include(), petsc4py.get_include()]
 include_dirs += ["%s/include" % d for d in petsc_dirs]
+
+if os.getenv("GENEO_BUILD_DIR"):
+    if not os.getenv("SLEPC_DIR"):
+        sys.exit("Must also set SLEPC_DIR")
+    libs = ["petsc", "geneopc", "boost_mpi", "slepc"]
+    geneo_dir = os.path.join(os.getenv("GENEO_BUILD_DIR"), "src")
+    include_dirs.append(os.path.join(geneo_dir, "..", "..", "hdr"))
+    geneo_link_dir = ["-L%s" % geneo_dir]
+else:
+    libs = ["petsc"]
+    geneo_link_dir = []
 
 setup(name='firedrake',
       version=versioneer.get_version(),
@@ -82,10 +95,10 @@ setup(name='firedrake',
       ext_modules=[Extension('firedrake.dmplex',
                              sources=dmplex_sources,
                              include_dirs=include_dirs,
-                             libraries=["petsc"],
+                             libraries=libs,
                              extra_link_args=["-L%s/lib" % d for d in petsc_dirs] +
                              ["-Wl,-rpath,%s/lib" % d for d in petsc_dirs] +
-                             ["-Wl,-rpath,%s/lib" % sys.prefix]),
+                             ["-Wl,-rpath,%s/lib" % sys.prefix] + geneo_link_dir),
                    Extension('firedrake.extrusion_numbering',
                              sources=extnum_sources,
                              include_dirs=include_dirs,

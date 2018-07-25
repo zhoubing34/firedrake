@@ -20,9 +20,22 @@ cdef extern from "mpi-compat.h":
 
 include "dmplexinc.pxi"
 
-
 FACE_SETS_LABEL = "Face Sets"
 CELL_SETS_LABEL = "Cell Sets"
+
+def setupgeneopc(PETSc.PC pc not None, PETSc.IS dofmult not None, intersections not None):
+    cdef PETSc.PetscIS *ises = NULL
+    cdef PetscInt i, n
+
+    n = len(intersections)
+    CHKERR(PetscMalloc1(n, &ises))
+    for i in range(n):
+        ises[i] = (<PETSc.IS?>intersections[i]).iset
+    CHKERR(PCGenEOSetup(pc.pc, dofmult.iset, ises))
+    CHKERR(PetscFree(ises))
+
+
+PCRegister("geneo", &createGenEOPC)
 
 
 @cython.boundscheck(False)
@@ -885,9 +898,9 @@ def mark_entity_classes(PETSc.DM plex):
         PetscInt nleaves
         PetscInt *closure = NULL
         PetscInt nclosure
-        PetscInt *ilocal = NULL
+        const PetscInt *ilocal = NULL
         PetscBool non_exec
-        PetscSFNode *iremote = NULL
+        const PetscSFNode *iremote = NULL
         PETSc.SF point_sf = None
         PetscBool is_ghost, is_owned
         DMLabel lbl_core, lbl_owned, lbl_ghost
@@ -1292,8 +1305,8 @@ def get_cell_remote_ranks(PETSc.DM plex):
         PetscInt cStart, cEnd, ncells, i
         PETSc.SF sf
         PetscInt nroots, nleaves
-        PetscInt *ilocal
-        PetscSFNode *iremote
+        const PetscInt *ilocal = NULL
+        const PetscSFNode *iremote = NULL
         np.ndarray[PetscInt, ndim=1, mode="c"] result
 
     cStart, cEnd = plex.getHeightStratum(0)
@@ -2088,8 +2101,8 @@ def exchange_cell_orientations(
     cdef:
         PETSc.SF sf
         PetscInt nroots, nleaves
-        PetscInt *ilocal
-        PetscSFNode *iremote
+        const PetscInt *ilocal = NULL
+        const PetscSFNode *iremote = NULL
         MPI.Datatype dtype
         PETSc.Section new_section
         PetscInt *new_values = NULL
@@ -2252,6 +2265,27 @@ def halo_end(PETSc.SF sf, dat, MPI.Datatype dtype, reverse, MPI.Op op=MPI.SUM):
         CHKERR(PetscSFBcastEnd(sf.sf, dtype.ob_mpi,
                                <const void *>buf.data,
                                <void *>buf.data))
+
+
+def reduceBegin(PETSc.SF sf, MPI.Datatype unit, np.ndarray leafdata, np.ndarray rootdata,
+                MPI.Op op=MPI.SUM):
+    CHKERR(PetscSFReduceBegin(sf.sf, unit.ob_mpi, <const void*>leafdata.data, <void*>rootdata.data, op.ob_mpi))
+
+def reduceEnd(PETSc.SF sf, MPI.Datatype unit, np.ndarray leafdata, np.ndarray rootdata,
+                MPI.Op op=MPI.SUM):
+    CHKERR(PetscSFReduceEnd(sf.sf, unit.ob_mpi, <const void*>leafdata.data, <void*>rootdata.data, op.ob_mpi))
+
+def bcastBegin(PETSc.SF sf, MPI.Datatype unit, np.ndarray rootdata, np.ndarray leafdata):
+    CHKERR(PetscSFBcastBegin(sf.sf, unit.ob_mpi, <const void*>rootdata.data, <void*>leafdata.data))
+
+def bcastEnd(PETSc.SF sf, MPI.Datatype unit, np.ndarray rootdata, np.ndarray leafdata):
+    CHKERR(PetscSFBcastEnd(sf.sf, unit.ob_mpi, <const void*>rootdata.data, <void*>leafdata.data))
+
+def gatherBegin(PETSc.SF sf, MPI.Datatype unit, np.ndarray leafdata, np.ndarray rootdata):
+    CHKERR( PetscSFGatherBegin(sf.sf, unit.ob_mpi, <const void*>leafdata.data, <void *>rootdata.data) )
+
+def gatherEnd(PETSc.SF sf, MPI.Datatype unit, np.ndarray leafdata, np.ndarray rootdata):
+    CHKERR( PetscSFGatherEnd(sf.sf, unit.ob_mpi, <const void*>leafdata.data, <void *>rootdata.data) )
 
 
 cdef int DMPlexGetAdjacency_Facet_Support(PETSc.PetscDM dm,
