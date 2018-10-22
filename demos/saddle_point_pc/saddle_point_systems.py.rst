@@ -322,7 +322,7 @@ We can improve things by building a matrix used to precondition the
 inversion of the Schur complement.  Note how we're currently not using
 any preconditioning, and so the inner solver struggles (this can be
 observed by additionally running with the parameter
-``"fieldsplit_1_ksp_converged_reason": True``.
+``"fieldsplit_1_ksp_converged_reason": None``.
 
 As we increase the number of mesh elements, the solver inverting
 :math:`S` takes more and more iterations, which means that we take

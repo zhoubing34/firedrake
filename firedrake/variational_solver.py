@@ -105,12 +105,16 @@ class NonlinearVariationalSolver(OptionsManager):
 
             {'snes_type': 'ksponly'}
 
-        PETSc flag options should be specified with `bool` values.
+        If you want a flag whose presence indicates that a default
+        should be set up (for example lots of the viewers), then use
+        ``None``.
         For example:
 
         .. code-block:: python
 
-            {'snes_monitor': True}
+            {'snes_monitor': None}
+
+        Uses the default snes monitor.
 
         To use the ``pre_jacobian_callback`` or ``pre_function_callback``
         functionality, the user-defined function must accept the current

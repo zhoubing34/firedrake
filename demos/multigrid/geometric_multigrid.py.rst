@@ -165,7 +165,7 @@ remembering to tell PETSc to use pivoting in the factorisation. ::
   solve(a == L, u, bcs=bcs, solver_parameters={"ksp_type": "preonly",
                                                "pc_type": "lu",
                                                "pc_factor_shift_type": "inblocks",
-                                               "ksp_monitor": True,
+                                               "ksp_monitor": None,
                                                "pmat_type": "aij"})
 
 Next we'll use a Schur complement solver, using geometric multigrid to
@@ -183,7 +183,7 @@ bilinear form to the solver ourselves: ::
 
   parameters = {
       "ksp_type": "gmres",
-      "ksp_monitor": True,
+      "ksp_monitor": None,
       "pc_type": "fieldsplit",
       "pc_fieldsplit_type": "schur",
       "pc_fieldsplit_schur_fact_type": "lower",
@@ -216,7 +216,7 @@ approximations.
 
   parameters = {
         "ksp_type": "gcr",
-        "ksp_monitor": True,
+        "ksp_monitor": None,
         "mat_type": "nest",
         "pc_type": "mg",
         "mg_coarse_ksp_type": "preonly",
