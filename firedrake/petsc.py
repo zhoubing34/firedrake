@@ -191,11 +191,7 @@ class OptionsManager(object):
         try:
             for k, v in self.parameters.items():
                 key = self.options_prefix + k
-                if type(v) is bool:
-                    if v:
-                        self.options_object[key] = None
-                else:
-                    self.options_object[key] = v
+                self.options_object[key] = v
             yield
         finally:
             for k in self.to_delete:
