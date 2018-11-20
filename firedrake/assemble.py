@@ -1,4 +1,3 @@
-import numpy
 import ufl
 from collections import defaultdict
 from itertools import chain
@@ -16,6 +15,7 @@ from firedrake import solving
 from firedrake import utils
 from firedrake.slate import slate
 from firedrake.slate import slac
+from firedrake.utils import ScalarType, ScalarType_c
 
 
 __all__ = ["assemble"]
@@ -193,6 +193,7 @@ def _assemble(f, tensor=None, bcs=None, form_compiler_parameters=None,
     else:
         form_compiler_parameters = {}
     form_compiler_parameters["assemble_inverse"] = inverse
+    form_compiler_parameters['scalar_type'] = ScalarType_c
 
     topology = f.ufl_domains()[0].topology
     for m in f.ufl_domains():
@@ -310,7 +311,7 @@ def _assemble(f, tensor=None, bcs=None, form_compiler_parameters=None,
             except SparsityFormatError:
                 raise ValueError("Monolithic matrix assembly is not supported for systems with R-space blocks.")
 
-            result_matrix = matrix.Matrix(f, bcs, mat_type, sparsity, numpy.float64,
+            result_matrix = matrix.Matrix(f, bcs, mat_type, sparsity, ScalarType,
                                           "%s_%s_matrix" % fs_names,
                                           options_prefix=options_prefix)
             tensor = result_matrix._M
