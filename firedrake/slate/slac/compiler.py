@@ -32,7 +32,9 @@ from gem.utils import groupby
 from itertools import chain
 
 from pyop2.utils import get_petsc_dir, as_tuple
-from pyop2.datatypes import as_cstr, ScalarType
+from pyop2.datatypes import as_cstr
+
+from firedrake.utils import ScalarType_c
 
 import firedrake.slate.slate as slate
 import numpy as np
@@ -77,8 +79,7 @@ def compile_expression(slate_expr, tsfc_parameters=None):
     cache = slate_expr._metakernel_cache
     if tsfc_parameters is None:
         tsfc_parameters = parameters["form_compiler"]
-    cscalar = as_cstr(ScalarType)
-    tsfc_parameters['scalar_type'] = cscalar
+    tsfc_parameters['scalar_type'] = ScalarType_c
     key = str(sorted(tsfc_parameters.items()))
     try:
         return cache[key]
@@ -149,7 +150,6 @@ def generate_kernel_ast(builder, statements, declared_temps):
         shape = (1,)
     else:
         shape = slate_expr.shape
-    cscalar = as_cstr(ScalarType)
 
     # Now we create the result statement by declaring its eigen type and
     # using Eigen::Map to move between Eigen and C data structs.
@@ -157,10 +157,10 @@ def generate_kernel_ast(builder, statements, declared_temps):
     result_sym = ast.Symbol("T%d" % len(declared_temps))
     result_data_sym = ast.Symbol("A%d" % len(declared_temps))
     result_type = "Eigen::Map<%s >" % eigen_matrixbase_type(shape)
-    result = ast.Decl(cscalar, ast.Symbol(result_data_sym, shape))
+    result = ast.Decl(ScalarType_c, ast.Symbol(result_data_sym, shape))
     result_statement = ast.FlatBlock("%s %s((%s *)%s);\n" % (result_type,
                                                              result_sym,
-                                                             cscalar,
+                                                             ScalarType_c,
                                                              result_data_sym))
     statements.append(result_statement)
 
@@ -171,7 +171,7 @@ def generate_kernel_ast(builder, statements, declared_temps):
     statements.append(ast.Incr(result_sym, cpp_string))
 
     # Generate arguments for the macro kernel
-    args = [result, ast.Decl("%s *" % cscalar, builder.coord_sym,
+    args = [result, ast.Decl(ScalarType_c, builder.coord_sym,
                              pointers=[("restrict",)],
                              qualifiers=["const"])]
 
@@ -184,8 +184,7 @@ def generate_kernel_ast(builder, statements, declared_temps):
     # Coefficient information
     expr_coeffs = slate_expr.coefficients()
     for c in expr_coeffs:
-        ctype = "%s *" % cscalar
-        args.extend([ast.Decl(ctype, csym,
+        args.extend([ast.Decl(ScalarType_c, csym,
                               pointers=[("restrict",)],
                               qualifiers=["const"]) for csym in builder.coefficient(c)])
 
@@ -210,7 +209,7 @@ def generate_kernel_ast(builder, statements, declared_temps):
 
     # Cell size information
     if builder.needs_cell_sizes:
-        args.append(ast.Decl(cscalar, builder.cell_size_sym,
+        args.append(ast.Decl(ScalarType_c, builder.cell_size_sym,
                              pointers=[("restrict",)],
                              qualifiers=["const"]))
 
