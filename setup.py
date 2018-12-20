@@ -1,5 +1,6 @@
 from distutils.core import setup
 from distutils.extension import Extension
+from Cython.Distutils import Extension
 from glob import glob
 from os import environ as env, path
 import os
@@ -47,14 +48,10 @@ try:
     extnum_sources = ["firedrake/extrusion_numbering.pyx"]
     spatialindex_sources = ["firedrake/spatialindex.pyx"]
     h5iface_sources = ["firedrake/hdf5interface.pyx"]
+    geneo_sources = ["firedrake/preconditioners/geneoimpl.pyx"]
     mg_sources = ["firedrake/mg/impl.pyx"]
 except ImportError:
-    # No cython, dmplex.c must be generated in distributions.
-    dmplex_sources = ["firedrake/dmplex.c"]
-    extnum_sources = ["firedrake/extrusion_numbering.c"]
-    spatialindex_sources = ["firedrake/spatialindex.cpp"]
-    h5iface_sources = ["firedrake/hdf5interface.c"]
-    mg_sources = ["firedrake/mg/impl.c"]
+    raise NotImplementedError("Cython must be available to build Firedrake")
 
 if 'CC' not in env:
     env['CC'] = "mpicc"
@@ -65,16 +62,56 @@ if os.getenv("SLEPC_DIR"):
 include_dirs = [np.get_include(), petsc4py.get_include()]
 include_dirs += ["%s/include" % d for d in petsc_dirs]
 
-if os.getenv("GENEO_BUILD_DIR"):
-    if not os.getenv("SLEPC_DIR"):
-        sys.exit("Must also set SLEPC_DIR")
-    libs = ["petsc", "geneopc", "boost_mpi", "slepc"]
-    geneo_dir = os.path.join(os.getenv("GENEO_BUILD_DIR"), "src")
-    include_dirs.append(os.path.join(geneo_dir, "..", "..", "hdr"))
-    geneo_link_dir = ["-L%s" % geneo_dir]
+ext_modules = [Extension('firedrake.dmplex',
+                         sources=dmplex_sources,
+                         include_dirs=include_dirs,
+                         libraries=["petsc"],
+                         extra_link_args=(["-L%s/lib" % d for d in petsc_dirs]
+                                          + ["-Wl,-rpath,%s/lib" % d for d in petsc_dirs])),
+               Extension('firedrake.extrusion_numbering',
+                         sources=extnum_sources,
+                         include_dirs=include_dirs,
+                         libraries=["petsc"],
+                         extra_link_args=(["-L%s/lib" % d for d in petsc_dirs]
+                                          + ["-Wl,-rpath,%s/lib" % d for d in petsc_dirs]
+                                          + ["-Wl,-rpath,%s/lib" % sys.prefix])),
+               Extension('firedrake.hdf5interface',
+                         sources=h5iface_sources,
+                         include_dirs=include_dirs,
+                         libraries=["petsc"],
+                         extra_link_args=(["-L%s/lib" % d for d in petsc_dirs]
+                                          + ["-Wl,-rpath,%s/lib" % d for d in petsc_dirs]
+                                          + ["-Wl,-rpath,%s/lib" % sys.prefix])),
+               Extension('firedrake.spatialindex',
+                         sources=spatialindex_sources,
+                         include_dirs=[np.get_include(), "%s/include" % sys.prefix],
+                         libraries=["spatialindex_c"],
+                         extra_link_args=["-L%s/lib" % sys.prefix,
+                                          "-Wl,-rpath,%s/lib" % sys.prefix]),
+               Extension('firedrake.mg.impl',
+                         sources=mg_sources,
+                         include_dirs=include_dirs,
+                         libraries=["petsc"],
+                         extra_link_args=(["-L%s/lib" % d for d in petsc_dirs]
+                                          + ["-Wl,-rpath,%s/lib" % d for d in petsc_dirs]
+                                          + ["-Wl,-rpath,%s/lib" % sys.prefix]))]
+
+if os.getenv("WITH_GENEO"):
+    geneo_dirs = petsc_dirs + (sys.prefix, )
+    geneo_include_dirs = [np.get_include(), petsc4py.get_include()]
+    geneo_include_dirs += ["%s/include" % d for d in geneo_dirs]
+    ext_modules.append(Extension('firedrake.preconditioners.geneoimpl',
+                                 sources=geneo_sources,
+                                 cython_compile_time_env={"WITH_GENEO": True},
+                                 include_dirs=geneo_include_dirs,
+                                 libraries=["petsc", "geneopc", "boost_mpi", "slepc"],
+                                 extra_link_args=(["-L%s/lib" % d for d in geneo_dirs]
+                                                  + ["-Wl,-rpath,%s/lib" % d for d in geneo_dirs])))
 else:
-    libs = ["petsc"]
-    geneo_link_dir = []
+    ext_modules.append(Extension('firedrake.preconditioners.geneoimpl',
+                                 sources=geneo_sources,
+                                 cython_compile_time_env={"WITH_GENEO": False}))
+
 
 setup(name='firedrake',
       version=versioneer.get_version(),
@@ -92,38 +129,4 @@ setup(name='firedrake',
                                   "locate.c",
                                   "icons/*.png"]},
       scripts=glob('scripts/*'),
-      ext_modules=[Extension('firedrake.dmplex',
-                             sources=dmplex_sources,
-                             include_dirs=include_dirs,
-                             libraries=libs,
-                             extra_link_args=["-L%s/lib" % d for d in petsc_dirs] +
-                             ["-Wl,-rpath,%s/lib" % d for d in petsc_dirs] +
-                             ["-Wl,-rpath,%s/lib" % sys.prefix] + geneo_link_dir),
-                   Extension('firedrake.extrusion_numbering',
-                             sources=extnum_sources,
-                             include_dirs=include_dirs,
-                             libraries=["petsc"],
-                             extra_link_args=["-L%s/lib" % d for d in petsc_dirs] +
-                             ["-Wl,-rpath,%s/lib" % d for d in petsc_dirs] +
-                             ["-Wl,-rpath,%s/lib" % sys.prefix]),
-                   Extension('firedrake.hdf5interface',
-                             sources=h5iface_sources,
-                             include_dirs=include_dirs,
-                             libraries=["petsc"],
-                             extra_link_args=["-L%s/lib" % d for d in petsc_dirs] +
-                             ["-Wl,-rpath,%s/lib" % d for d in petsc_dirs] +
-                             ["-Wl,-rpath,%s/lib" % sys.prefix]),
-                   Extension('firedrake.spatialindex',
-                             sources=spatialindex_sources,
-                             include_dirs=[np.get_include(),
-                                           "%s/include" % sys.prefix],
-                             libraries=["spatialindex_c"],
-                             extra_link_args=["-L%s/lib" % sys.prefix,
-                                              "-Wl,-rpath,%s/lib" % sys.prefix]),
-                   Extension('firedrake.mg.impl',
-                             sources=mg_sources,
-                             include_dirs=include_dirs,
-                             libraries=["petsc"],
-                             extra_link_args=["-L%s/lib" % d for d in petsc_dirs] +
-                             ["-Wl,-rpath,%s/lib" % d for d in petsc_dirs] +
-                             ["-Wl,-rpath,%s/lib" % sys.prefix])])
+      ext_modules=ext_modules)

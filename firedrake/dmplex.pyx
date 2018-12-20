@@ -23,21 +23,6 @@ include "dmplexinc.pxi"
 FACE_SETS_LABEL = "Face Sets"
 CELL_SETS_LABEL = "Cell Sets"
 
-def setupgeneopc(PETSc.PC pc not None, PETSc.IS dofmult not None, intersections not None):
-    cdef PETSc.PetscIS *ises = NULL
-    cdef PetscInt i, n
-
-    n = len(intersections)
-    CHKERR(PetscMalloc1(n, &ises))
-    for i in range(n):
-        ises[i] = (<PETSc.IS?>intersections[i]).iset
-    CHKERR(PCGenEOSetup(pc.pc, dofmult.iset, ises))
-    CHKERR(PetscFree(ises))
-
-
-PCRegister("geneo", &createGenEOPC)
-
-
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def facet_numbering(PETSc.DM plex, kind,

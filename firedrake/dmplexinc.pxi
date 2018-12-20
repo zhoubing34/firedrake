@@ -12,10 +12,6 @@ cdef extern from "petsc.h":
         PETSC_USE_POINTER
     int PCRegister(const char*, int (*)(PETSc.PetscPC))
 
-cdef extern from "geneo_c.h":
-    int PCGenEOSetup(PETSc.PetscPC, PETSc.PetscIS, PETSc.PetscIS*)
-    int createGenEOPC(PETSc.PetscPC)
-
 cdef extern from "petscsys.h" nogil:
    int PetscMalloc1(PetscInt,void*)
    int PetscFree(void*)
